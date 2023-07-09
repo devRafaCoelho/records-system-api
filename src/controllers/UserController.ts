@@ -32,7 +32,8 @@ export const registerUser = async (req: Request, res: Response) => {
     const { password: _, ...userData } = registeredUser;
 
     return res.status(201).json(userData);
-  } catch {
+  } catch (error) {
+    console.log(error);
     return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };

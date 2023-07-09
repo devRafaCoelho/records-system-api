@@ -1,7 +1,7 @@
 -- CreateTable
 CREATE TABLE "User" (
     "id" SERIAL NOT NULL,
-    "fisrtName" TEXT NOT NULL,
+    "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "cpf" TEXT,
@@ -14,7 +14,7 @@ CREATE TABLE "User" (
 -- CreateTable
 CREATE TABLE "Client" (
     "id" SERIAL NOT NULL,
-    "fisrtName" TEXT NOT NULL,
+    "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "cpf" TEXT NOT NULL,
