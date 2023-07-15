@@ -13,8 +13,7 @@ export const registerUser = async (req: Request, res: Response) => {
     if (isUserEmail) return res.status(400).json({ error: { email: 'E-mail já cadastrado' } });
 
     const isUserCPF = await prisma.user.findFirst({ where: { cpf } });
-    if (isUserCPF && cpf !== undefined)
-      return res.status(400).json({ error: { cpf: 'CPF já cadastrado' } });
+    if (isUserCPF) return res.status(400).json({ error: { cpf: 'CPF já cadastrado' } });
 
     const encryptedPassword = await bcrypt.hash(password, 10);
 
@@ -22,8 +21,8 @@ export const registerUser = async (req: Request, res: Response) => {
       firstName,
       lastName,
       email,
-      cpf,
-      phone,
+      cpf: cpf === '' ? null : cpf,
+      phone: phone === '' ? null : phone,
       password: encryptedPassword
     };
 

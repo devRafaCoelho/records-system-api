@@ -24,6 +24,7 @@ export const userRegisterSchema = Joi.object({
       return value;
     })
     .trim()
+    .allow('')
     .messages({
       'any.invalid': 'CPF inválido'
     }),
@@ -35,6 +36,7 @@ export const userRegisterSchema = Joi.object({
       return value;
     })
     .trim()
+    .allow('')
     .messages({
       'any.invalid': 'Número de telefone inválido'
     }),
