@@ -9,18 +9,11 @@ export const ValidateRequest =
     } catch (error: unknown) {
       const joiError = error as ValidationError;
 
-      const errorsMap: { [key: string]: string } = joiError.details.reduce(
-        (previousValue, currentValue) => {
-          if (currentValue.context) {
-            return {
-              ...previousValue,
-              [currentValue.context!.key as string]: currentValue.message
-            };
-          } else {
-            return previousValue;
-          }
-        },
-        {}
+      const errorsMap: { [key: string]: string } = Object.fromEntries(
+        joiError.details.map((currentValue) => [
+          (currentValue.context?.key as string) || '',
+          currentValue.message
+        ])
       );
 
       return res.status(400).json({ error: errorsMap });
