@@ -1,8 +1,8 @@
-const Joi = require('joi');
-const { cpf } = require('cpf-cnpj-validator');
-const { isValidNumber } = require('libphonenumber-js');
+import Joi from 'joi';
+import { cpf } from 'cpf-cnpj-validator';
+import { isValidNumber, CountryCode } from 'libphonenumber-js';
 
-export const userRegisterSchema = Joi.object({
+export const UserSchema = Joi.object({
   firstName: Joi.string().required().messages({
     'any.required': 'O Primeiro Nome é obrigatório.',
     'string.empty': 'O Primeiro Nome é obrigatório.'
@@ -23,22 +23,28 @@ export const userRegisterSchema = Joi.object({
       }
       return value;
     })
+    .regex(/^\d{11}$/)
     .trim()
     .allow('')
     .messages({
-      'any.invalid': 'CPF inválido'
+      'any.invalid': 'CPF inválido',
+      'string.pattern.base': 'CPF inválido',
+      'string.length': 'CPF inválido'
     }),
   phone: Joi.string()
     .custom((value: string, helpers: any) => {
-      if (!isValidNumber(value, { defaultCountry: 'BR' })) {
+      if (!isValidNumber(value, 'BR' as CountryCode)) {
         return helpers.error('any.invalid');
       }
       return value;
     })
+    .regex(/^\+55\d{11}$/)
     .trim()
     .allow('')
     .messages({
-      'any.invalid': 'Número de telefone inválido'
+      'any.invalid': 'Número de telefone inválido',
+      'string.pattern.base': 'Número de telefone inválido',
+      'string.length': 'Número de telefone inválido'
     }),
   password: Joi.string().min(5).required().messages({
     'any.required': 'A Senha é obrigatória.',

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import Joi, { ValidationError } from 'joi';
 
-const validateRequest =
+export const ValidateRequest =
   (schema: Joi.ObjectSchema<any>) => async (req: Request, res: Response, next: NextFunction) => {
     try {
       await schema.validateAsync(req.body);
@@ -26,5 +26,3 @@ const validateRequest =
       return res.status(400).json({ error: errorsMap });
     }
   };
-
-export { validateRequest };

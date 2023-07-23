@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { validateRequest } from './middlewares/validateRequest';
-import { userRegisterSchema } from './schemas/UserSchemas';
 import { registerUser } from './controllers/UserController';
+import { UserSchema } from './schemas/UserSchema';
+import { ValidateRequest } from './middlewares/ValidateRequest';
 
 const routes = Router();
 
-routes.post('/user/register', validateRequest(userRegisterSchema), registerUser);
+routes.post('/user/register', ValidateRequest(UserSchema), registerUser);
 
 export default routes;
