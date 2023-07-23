@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { transporter } from '../config/nodemailer';
-import { RegisterUser } from '../types/UserTypes';
+import { Login, RegisterUser } from '../types/UserTypes';
 import { compilerHtml } from '../utils/compilerHtml';
 
 const prisma = new PrismaClient();
@@ -49,7 +49,7 @@ export const registerUser = async (req: Request, res: Response) => {
 };
 
 export const login = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const { email, password }: Login = req.body;
 
   try {
     const user = await prisma.user.findUnique({ where: { email } });

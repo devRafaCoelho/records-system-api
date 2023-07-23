@@ -6,3 +6,8 @@ export type RegisterUser = {
   phone: string;
   password: string;
 };
+
+export type Login = {
+  email: string;
+  password: string;
+};
