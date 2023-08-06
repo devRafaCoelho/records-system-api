@@ -5,11 +5,13 @@ import { isValidNumber, CountryCode } from 'libphonenumber-js';
 export const UserSchema = Joi.object({
   firstName: Joi.string().required().messages({
     'any.required': 'O Primeiro Nome é obrigatório.',
-    'string.empty': 'O Primeiro Nome é obrigatório.'
+    'string.empty': 'O Primeiro Nome é obrigatório.',
+    'string.base': 'O Primeiro Nome precisa ser um nome válido.'
   }),
   lastName: Joi.string().required().messages({
     'any.required': 'O Último Nome é obrigatório.',
-    'string.empty': 'O Último Nome é obrigatório.'
+    'string.empty': 'O Último Nome é obrigatório.',
+    'string.base': 'O Último Nome precisa ser um nome válido.'
   }),
   email: Joi.string().email().required().messages({
     'string.email': 'O Email precisa ser válido.',
