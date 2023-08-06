@@ -72,14 +72,7 @@ export const login = async (req: Request, res: Response) => {
 
 export const getUser = async (req: Request, res: Response) => {
   try {
-    const userData = {
-      id: req.user.id,
-      firstName: req.user.firstName,
-      lastName: req.user.lastName,
-      email: req.user.email
-    };
-
-    return res.status(200).json(userData);
+    return res.status(200).json(req.user);
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: 'Erro interno do servidor' });
