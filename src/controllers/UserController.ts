@@ -69,3 +69,12 @@ export const login = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };
+
+export const getUser = async (req: Request, res: Response) => {
+  try {
+    return res.status(200).json(req.user);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: 'Erro interno do servidor' });
+  }
+};

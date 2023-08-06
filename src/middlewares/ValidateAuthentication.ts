@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
+import { NextFunction, Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 
 declare global {
   namespace Express {
@@ -30,6 +30,6 @@ export const validateAuthentication = async (req: Request, res: Response, next: 
 
     next();
   } catch {
-    return res.status(500).json({ message: 'Erro interno do servidor' });
+    return res.status(500).json({ message: 'Nao autorizado!' });
   }
 };
