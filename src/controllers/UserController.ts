@@ -126,3 +126,17 @@ export const updateUser = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };
+
+export const deleteUser = async (req: Request, res: Response) => {
+  const { id } = req.user
+
+  try {
+    await prisma.user.delete({
+      where: { id: id }
+    })
+
+    return res.status(204).send()
+  } catch {
+    return res.status(500).json({ message: 'Erro interno do servidor' })
+  }
+}
