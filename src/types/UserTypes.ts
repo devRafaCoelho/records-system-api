@@ -11,3 +11,12 @@ export type Login = {
   email: string;
   password: string;
 };
+
+export type UpdateUser = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  cpf: string;
+  phone: string;
+  password: string;
+};
