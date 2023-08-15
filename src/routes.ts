@@ -1,8 +1,20 @@
 import { Router } from 'express';
-import { deleteUser, getUser, login, registerUser, updateUser } from './controllers/UserController';
+import {
+  deleteUser,
+  getUser,
+  login,
+  newPassword,
+  registerUser,
+  updateUser
+} from './controllers/UserController';
 import { validateAuthentication } from './middlewares/ValidateAuthentication';
 import { ValidateRequest } from './middlewares/validateRequest';
-import { RegisterUserSchema, LoginSchema, UpdateUserSchema } from './schemas/UserSchema';
+import {
+  RegisterUserSchema,
+  LoginSchema,
+  UpdateUserSchema,
+  NewPasswordSchema
+} from './schemas/UserSchema';
 
 const routes = Router();
 
@@ -13,6 +25,7 @@ routes.use(validateAuthentication);
 
 routes.get('/user/', getUser);
 routes.put('/user/', ValidateRequest(UpdateUserSchema), updateUser);
+routes.put('/user/newPassword', ValidateRequest(NewPasswordSchema), newPassword);
 routes.delete('/user', deleteUser);
 
 export default routes;
