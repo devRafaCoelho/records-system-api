@@ -59,7 +59,7 @@ export const login = async (req: Request, res: Response) => {
     if (!validPassword) return res.status(400).json({ error: { password: 'Senha inválida' } });
 
     const token = jwt.sign({ id: user.id }, '123456', {
-      expiresIn: '1h'
+      expiresIn: '10min'
     });
 
     const { password: _, ...userData } = user;
@@ -128,15 +128,15 @@ export const updateUser = async (req: Request, res: Response) => {
 };
 
 export const deleteUser = async (req: Request, res: Response) => {
-  const { id } = req.user
+  const { id } = req.user;
 
   try {
     await prisma.user.delete({
       where: { id: id }
-    })
+    });
 
-    return res.status(204).send()
+    return res.status(204).send();
   } catch {
-    return res.status(500).json({ message: 'Erro interno do servidor' })
+    return res.status(500).json({ message: 'Erro interno do servidor' });
   }
-}
+};
