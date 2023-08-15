@@ -125,3 +125,21 @@ export const UpdateUserSchema = Joi.object({
     'string.min': 'A Senha precisa conter, no mínimo, 5 caracteres.'
   })
 });
+
+export const NewPasswordSchema = Joi.object({
+  password: Joi.string().min(5).required().messages({
+    'any.required': 'A Senha é obrigatória.',
+    'string.empty': 'A Senha é obrigatória.',
+    'string.min': 'A Senha precisa conter, no mínimo, 5 caracteres.'
+  }),
+  newPassword: Joi.string().min(5).required().messages({
+    'any.required': 'A Nova Senha é obrigatória.',
+    'string.empty': 'A Nova Senha é obrigatória.',
+    'string.min': 'A Nova Senha precisa conter, no mínimo, 5 caracteres.'
+  }),
+  confirmNewPassword: Joi.any().valid(Joi.ref('newPassword')).required().messages({
+    'any.only': 'As senhas não coincidem.',
+    'any.required': 'A Confirmação da Nova Senha é obrigatória.',
+    'any.empty': 'A Confirmação da Nova Senha é obrigatória.'
+  })
+});

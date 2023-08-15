@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { transporter } from '../config/nodemailer';
-import { Login, RegisterUser, UpdateUser } from '../types/UserTypes';
+import { Login, NewPassword, RegisterUser, UpdateUser } from '../types/UserTypes';
 import { compilerHtml } from '../utils/compilerHtml';
 
 const prisma = new PrismaClient();
@@ -121,8 +121,42 @@ export const updateUser = async (req: Request, res: Response) => {
     });
 
     return res.status(204).send();
-  } catch (error) {
-    console.log(error);
+  } catch {
+    return res.status(500).json({ message: 'Erro interno do servidor' });
+  }
+};
+
+export const newPassword = async (req: Request, res: Response) => {
+  const { password, newPassword }: NewPassword = req.body;
+  const { id } = req.user;
+
+  const encryptedNewPassword = await bcrypt.hash(newPassword, 10);
+
+  const data = {
+    password: encryptedNewPassword
+  };
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: id
+      }
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: { user: 'Usuário não encontrado' } });
+    }
+
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) return res.status(400).json({ error: { password: 'Senha inválida' } });
+
+    await prisma.user.update({
+      where: { id: id },
+      data: data
+    });
+
+    return res.status(204).send();
+  } catch {
     return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };
