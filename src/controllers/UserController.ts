@@ -16,9 +16,11 @@ export const registerUser = async (req: Request, res: Response) => {
     if (emailExists)
       return res.status(400).json({ error: { type: 'email', message: 'E-mail já cadastrado.' } });
 
-    const cpfExists = await prisma.user.findFirst({ where: { cpf } });
-    if (cpfExists)
-      return res.status(400).json({ error: { type: 'cpf', message: 'CPF já cadastrado.' } });
+    if (cpf) {
+      const cpfExists = await prisma.user.findFirst({ where: { cpf } });
+      if (cpfExists)
+        return res.status(400).json({ error: { type: 'cpf', message: 'CPF já cadastrado.' } });
+    }
 
     const encryptedPassword = await bcrypt.hash(password, 10);
 
@@ -26,8 +28,8 @@ export const registerUser = async (req: Request, res: Response) => {
       firstName,
       lastName,
       email,
-      cpf: cpf === '' ? null : cpf,
-      phone: phone === '' ? null : phone,
+      cpf: cpf || null,
+      phone: phone || null,
       password: encryptedPassword
     };
 

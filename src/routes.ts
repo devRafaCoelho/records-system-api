@@ -19,13 +19,13 @@ import {
 const routes = Router();
 
 routes.post('/user', ValidateRequest(RegisterUserSchema), registerUser);
-// routes.post('/login', ValidateRequest(LoginSchema), login);
+routes.post('/login', ValidateRequest(LoginSchema), login);
 
-// routes.use(validateAuthentication);
+routes.use(validateAuthentication);
 
-// routes.get('/user/', getUser);
-// routes.put('/user/', ValidateRequest(UpdateUserSchema), updateUser);
-// routes.put('/user/newPassword', ValidateRequest(NewPasswordSchema), newPassword);
-// routes.delete('/user', deleteUser);
+routes.get('/user/', getUser);
+routes.put('/user/', ValidateRequest(UpdateUserSchema), updateUser);
+routes.put('/user/newPassword', ValidateRequest(NewPasswordSchema), newPassword);
+routes.delete('/user', deleteUser);
 
 export default routes;
