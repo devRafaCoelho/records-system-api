@@ -155,11 +155,12 @@ export const newPassword = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(400).json({ error: { user: 'Usuário não encontrado' } });
+      return res.status(400).json({ error: { type: 'id', message: 'Usuário não encontrado.' } });
     }
 
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) return res.status(400).json({ error: { password: 'Senha inválida' } });
+    if (!validPassword)
+      return res.status(400).json({ error: { type: 'password', message: 'Senha inválida.' } });
 
     await prisma.user.update({
       where: { id: id },
