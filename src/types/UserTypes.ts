@@ -2,9 +2,10 @@ export type RegisterUser = {
   firstName: string;
   lastName: string;
   email: string;
-  cpf: string;
-  phone: string;
+  cpf?: string;
+  phone?: string;
   password: string;
+  confirmPassword: string;
 };
 
 export type Login = {
@@ -19,4 +20,10 @@ export type UpdateUser = {
   cpf: string;
   phone: string;
   password: string;
+};
+
+export type NewPassword = {
+  password: string;
+  newPassword: string;
+  confirmNewPassword: string;
 };

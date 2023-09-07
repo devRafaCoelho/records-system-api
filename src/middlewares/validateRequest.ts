@@ -9,13 +9,13 @@ export const ValidateRequest =
     } catch (error: unknown) {
       const joiError = error as ValidationError;
 
-      const errorsMap: { [key: string]: string } = Object.fromEntries(
-        joiError.details.map((currentValue) => [
-          (currentValue.context?.key as string) || '',
-          currentValue.message
-        ])
-      );
+      const firstError = joiError.details[0];
 
-      return res.status(400).json({ error: errorsMap });
+      const errorObject = {
+        type: (firstError?.context?.key as string) || '',
+        message: firstError?.message || ''
+      };
+
+      return res.status(400).json({ error: errorObject });
     }
   };

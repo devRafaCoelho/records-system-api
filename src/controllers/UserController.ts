@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { transporter } from '../config/nodemailer';
-import { Login, RegisterUser, UpdateUser } from '../types/UserTypes';
+import { Login, NewPassword, RegisterUser, UpdateUser } from '../types/UserTypes';
 import { compilerHtml } from '../utils/compilerHtml';
 
 const prisma = new PrismaClient();
@@ -13,10 +13,14 @@ export const registerUser = async (req: Request, res: Response) => {
 
   try {
     const emailExists = await prisma.user.findUnique({ where: { email } });
-    if (emailExists) return res.status(400).json({ error: { email: 'E-mail já cadastrado' } });
+    if (emailExists)
+      return res.status(400).json({ error: { type: 'email', message: 'E-mail já cadastrado.' } });
 
-    const cpfExists = await prisma.user.findFirst({ where: { cpf } });
-    if (cpfExists) return res.status(400).json({ error: { cpf: 'CPF já cadastrado' } });
+    if (cpf) {
+      const cpfExists = await prisma.user.findFirst({ where: { cpf } });
+      if (cpfExists)
+        return res.status(400).json({ error: { type: 'cpf', message: 'CPF já cadastrado.' } });
+    }
 
     const encryptedPassword = await bcrypt.hash(password, 10);
 
@@ -24,8 +28,8 @@ export const registerUser = async (req: Request, res: Response) => {
       firstName,
       lastName,
       email,
-      cpf: cpf === '' ? null : cpf,
-      phone: phone === '' ? null : phone,
+      cpf: cpf || null,
+      phone: phone || null,
       password: encryptedPassword
     };
 
@@ -53,13 +57,15 @@ export const login = async (req: Request, res: Response) => {
 
   try {
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.status(400).json({ error: { email: 'E-mail inválido' } });
+    if (!user)
+      return res.status(400).json({ error: { type: 'email', message: 'E-mail inválido.' } });
 
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) return res.status(400).json({ error: { password: 'Senha inválida' } });
+    if (!validPassword)
+      return res.status(400).json({ error: { type: 'password', message: 'Senha inválida.' } });
 
     const token = jwt.sign({ id: user.id }, '123456', {
-      expiresIn: '1h'
+      expiresIn: '8h'
     });
 
     const { password: _, ...userData } = user;
@@ -73,8 +79,7 @@ export const login = async (req: Request, res: Response) => {
 export const getUser = async (req: Request, res: Response) => {
   try {
     return res.status(200).json(req.user);
-  } catch (error) {
-    console.log(error);
+  } catch {
     return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };
@@ -89,8 +94,8 @@ export const updateUser = async (req: Request, res: Response) => {
     firstName,
     lastName,
     email,
-    cpf,
-    phone,
+    cpf: cpf || null,
+    phone: phone || null,
     password: encryptedPassword
   };
 
@@ -102,18 +107,24 @@ export const updateUser = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(400).json({ error: { user: 'Usuário não encontrado' } });
+      return res.status(400).json({ error: { type: 'id', message: 'Usuário não encontrado.' } });
     }
 
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) return res.status(400).json({ error: { password: 'Senha inválida' } });
+    if (!validPassword)
+      return res.status(400).json({ error: { type: 'password', message: 'Senha inválida.' } });
 
     const emailExists =
       userEmail !== email ? await prisma.user.findUnique({ where: { email: email } }) : null;
-    if (emailExists) return res.status(400).json({ error: { email: 'E-mail já cadastrado' } });
+    if (emailExists)
+      return res.status(400).json({ error: { type: 'email', message: 'E-mail já cadastrado.' } });
 
-    const cpfExists = userCpf !== cpf ? await prisma.user.findFirst({ where: { cpf: cpf } }) : null;
-    if (cpfExists) return res.status(400).json({ error: { email: 'CPF já cadastrado' } });
+    if (cpf) {
+      const cpfExists =
+        userCpf !== cpf ? await prisma.user.findFirst({ where: { cpf: cpf } }) : null;
+      if (cpfExists)
+        return res.status(400).json({ error: { type: 'cpf', message: 'CPF já cadastrado.' } });
+    }
 
     await prisma.user.update({
       where: { id: id },
@@ -121,8 +132,57 @@ export const updateUser = async (req: Request, res: Response) => {
     });
 
     return res.status(204).send();
-  } catch (error) {
-    console.log(error);
+  } catch {
+    return res.status(500).json({ message: 'Erro interno do servidor' });
+  }
+};
+
+export const newPassword = async (req: Request, res: Response) => {
+  const { password, newPassword }: NewPassword = req.body;
+  const { id } = req.user;
+
+  const encryptedNewPassword = await bcrypt.hash(newPassword, 10);
+
+  const data = {
+    password: encryptedNewPassword
+  };
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: id
+      }
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: { type: 'id', message: 'Usuário não encontrado.' } });
+    }
+
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword)
+      return res.status(400).json({ error: { type: 'password', message: 'Senha inválida.' } });
+
+    await prisma.user.update({
+      where: { id: id },
+      data: data
+    });
+
+    return res.status(204).send();
+  } catch {
+    return res.status(500).json({ message: 'Erro interno do servidor' });
+  }
+};
+
+export const deleteUser = async (req: Request, res: Response) => {
+  const { id } = req.user;
+
+  try {
+    await prisma.user.delete({
+      where: { id: id }
+    });
+
+    return res.status(204).send();
+  } catch {
     return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };
