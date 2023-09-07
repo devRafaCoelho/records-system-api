@@ -94,8 +94,8 @@ export const updateUser = async (req: Request, res: Response) => {
     firstName,
     lastName,
     email,
-    cpf,
-    phone,
+    cpf: cpf || null,
+    phone: phone || null,
     password: encryptedPassword
   };
 
@@ -107,18 +107,24 @@ export const updateUser = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(400).json({ error: { user: 'Usuário não encontrado' } });
+      return res.status(400).json({ error: { type: 'id', message: 'Usuário não encontrado.' } });
     }
 
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) return res.status(400).json({ error: { password: 'Senha inválida' } });
+    if (!validPassword)
+      return res.status(400).json({ error: { type: 'password', message: 'Senha inválida.' } });
 
     const emailExists =
       userEmail !== email ? await prisma.user.findUnique({ where: { email: email } }) : null;
-    if (emailExists) return res.status(400).json({ error: { email: 'E-mail já cadastrado' } });
+    if (emailExists)
+      return res.status(400).json({ error: { type: 'email', message: 'E-mail já cadastrado.' } });
 
-    const cpfExists = userCpf !== cpf ? await prisma.user.findFirst({ where: { cpf: cpf } }) : null;
-    if (cpfExists) return res.status(400).json({ error: { email: 'CPF já cadastrado' } });
+    if (cpf) {
+      const cpfExists =
+        userCpf !== cpf ? await prisma.user.findFirst({ where: { cpf: cpf } }) : null;
+      if (cpfExists)
+        return res.status(400).json({ error: { type: 'cpf', message: 'CPF já cadastrado.' } });
+    }
 
     await prisma.user.update({
       where: { id: id },
