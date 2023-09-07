@@ -13,10 +13,12 @@ export const registerUser = async (req: Request, res: Response) => {
 
   try {
     const emailExists = await prisma.user.findUnique({ where: { email } });
-    if (emailExists) return res.status(400).json({ error: { email: 'E-mail já cadastrado' } });
+    if (emailExists)
+      return res.status(400).json({ error: { type: 'email', message: 'E-mail já cadastrado.' } });
 
     const cpfExists = await prisma.user.findFirst({ where: { cpf } });
-    if (cpfExists) return res.status(400).json({ error: { cpf: 'CPF já cadastrado' } });
+    if (cpfExists)
+      return res.status(400).json({ error: { type: 'cpf', message: 'CPF já cadastrado.' } });
 
     const encryptedPassword = await bcrypt.hash(password, 10);
 
