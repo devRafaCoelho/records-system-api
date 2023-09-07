@@ -57,13 +57,15 @@ export const login = async (req: Request, res: Response) => {
 
   try {
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.status(400).json({ error: { email: 'E-mail inválido' } });
+    if (!user)
+      return res.status(400).json({ error: { type: 'email', message: 'E-mail inválido.' } });
 
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) return res.status(400).json({ error: { password: 'Senha inválida' } });
+    if (!validPassword)
+      return res.status(400).json({ error: { type: 'password', message: 'Senha inválida.' } });
 
     const token = jwt.sign({ id: user.id }, '123456', {
-      expiresIn: '10min'
+      expiresIn: '8h'
     });
 
     const { password: _, ...userData } = user;
@@ -77,8 +79,7 @@ export const login = async (req: Request, res: Response) => {
 export const getUser = async (req: Request, res: Response) => {
   try {
     return res.status(200).json(req.user);
-  } catch (error) {
-    console.log(error);
+  } catch {
     return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };
