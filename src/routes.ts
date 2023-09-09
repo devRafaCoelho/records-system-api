@@ -17,6 +17,8 @@ import {
 } from './schemas/UserSchemas';
 import { RegisterClientSchema } from './schemas/ClientSchemas';
 import { getClient, registerClient } from './controllers/ClienteControler';
+import { RegisterRecordSchema } from './schemas/RecordsSchemas';
+import { registerRecord } from './controllers/RecordController';
 
 const routes = Router();
 
@@ -32,5 +34,7 @@ routes.delete('/user', deleteUser);
 
 routes.post('/client', ValidateRequest(RegisterClientSchema), registerClient);
 routes.get('/client/:id', getClient);
+
+routes.post('/record', ValidateRequest(RegisterRecordSchema), registerRecord);
 
 export default routes;
