@@ -14,7 +14,7 @@ import {
   LoginSchema,
   UpdateUserSchema,
   NewPasswordSchema
-} from './schemas/UserSchema';
+} from './schemas/UserSchemas';
 
 const routes = Router();
 
