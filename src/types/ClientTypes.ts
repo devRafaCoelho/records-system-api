@@ -1,4 +1,4 @@
-export type RegisterClient = {
+export type Client = {
   firstName: string;
   lastName: string;
   email: string;
