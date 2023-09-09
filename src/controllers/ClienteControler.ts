@@ -62,14 +62,53 @@ export const getClient = async (req: Request, res: Response) => {
     const client = await prisma.client.findUnique({
       where: {
         id: parseInt(id)
+      },
+      include: {
+        Record: {
+          select: {
+            id: true,
+            description: true,
+            due_date: true,
+            value: true,
+            paid_out: true
+          },
+          orderBy: {
+            id: 'asc'
+          }
+        }
       }
     });
 
     if (!client)
       return res.status(400).json({ error: { type: 'id', message: 'Cliente não encontrado.' } });
 
-    res.status(200).json(client);
-  } catch {
+    let status = 'Em dia';
+    const inadimplenteRecord = client.Record.find(
+      (record) => !record.paid_out && new Date(record.due_date) < new Date()
+    );
+    if (inadimplenteRecord) {
+      status = 'Inadimplente';
+    }
+
+    const data = {
+      id: client.id,
+      firstName: client.firstName,
+      lastName: client.lastName,
+      email: client.email,
+      cpf: client.cpf,
+      phone: client.phone,
+      address: client.address,
+      complement: client.complement,
+      zip_code: client.zip_code,
+      district: client.district,
+      city: client.city,
+      uf: client.uf,
+      status,
+      records: client.Record
+    };
+
+    res.status(200).json(data);
+  } catch (error) {
     return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };
