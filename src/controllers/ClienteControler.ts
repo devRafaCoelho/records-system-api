@@ -212,3 +212,87 @@ export const deleteClient = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };
+
+export const listClients = async (req: Request, res: Response) => {
+  const { order, status, name, page: pageQuery = '1', perPage: perPageQuery = '10' } = req.query;
+  const page = Number(pageQuery);
+  const perPage = Number(perPageQuery);
+  const offset = (page - 1) * perPage;
+
+  try {
+    const allClients = await prisma.client.findMany({
+      orderBy: {
+        id: order === 'desc' ? 'desc' : 'asc'
+      },
+      skip: offset,
+      take: perPage,
+      include: {
+        Record: {
+          select: {
+            id: true,
+            description: true,
+            due_date: true,
+            value: true,
+            paid_out: true
+          }
+        }
+      }
+    });
+
+    const totalClients = await prisma.client.count();
+
+    function setStatus(records: any) {
+      const expiredRecord = records.find(
+        (record: any) => !record.paid_out && new Date(record.due_date) < new Date()
+      );
+      return expiredRecord ? 'Inadimplente' : 'Em dia';
+    }
+
+    let formattedClients = allClients.map((client) => ({
+      id: client.id,
+      firstName: client.firstName,
+      lastName: client.lastName,
+      email: client.email,
+      cpf: client.cpf,
+      phone: client.phone,
+      address: client.address,
+      complement: client.complement,
+      zip_code: client.zip_code,
+      district: client.district,
+      city: client.city,
+      uf: client.uf,
+      status: setStatus(client.Record)
+    }));
+
+    if (status) {
+      formattedClients = formattedClients.filter((client) => client.status === status);
+
+      if (formattedClients.length === 0) {
+        return res
+          .status(400)
+          .json({ error: { type: 'status', message: 'Nenhum Cliente encontrado.' } });
+      }
+    }
+
+    if (name) {
+      formattedClients = formattedClients.filter((client) => client.firstName === name);
+
+      if (formattedClients.length === 0) {
+        return res
+          .status(400)
+          .json({ error: { type: 'name', message: 'Nenhum Cliente encontrado.' } });
+      }
+    }
+
+    const response = {
+      totalClients,
+      totalPages: Math.ceil(totalClients / perPage),
+      currentPage: page,
+      clients: formattedClients
+    };
+
+    return res.status(200).json(response);
+  } catch {
+    return res.status(500).json({ message: 'Erro interno do servidor' });
+  }
+};
