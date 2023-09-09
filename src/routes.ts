@@ -16,7 +16,7 @@ import {
   NewPasswordSchema
 } from './schemas/UserSchemas';
 import { RegisterClientSchema } from './schemas/ClientSchemas';
-import { registerClient } from './controllers/ClienteControler';
+import { getClient, registerClient } from './controllers/ClienteControler';
 
 const routes = Router();
 
@@ -25,11 +25,12 @@ routes.post('/login', ValidateRequest(LoginSchema), login);
 
 routes.use(validateAuthentication);
 
-routes.get('/user/', getUser);
-routes.put('/user/', ValidateRequest(UpdateUserSchema), updateUser);
+routes.get('/user', getUser);
+routes.put('/user', ValidateRequest(UpdateUserSchema), updateUser);
 routes.put('/user/newPassword', ValidateRequest(NewPasswordSchema), newPassword);
 routes.delete('/user', deleteUser);
 
 routes.post('/client', ValidateRequest(RegisterClientSchema), registerClient);
+routes.get('/client/:id', getClient);
 
 export default routes;
