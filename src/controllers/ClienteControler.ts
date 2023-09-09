@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
 import { RegisterClient } from '../types/ClientTypes';
+import { formatDate, formatValue } from '../utils/format';
 
 const prisma = new PrismaClient();
 
@@ -52,6 +53,7 @@ export const registerClient = async (req: Request, res: Response) => {
 
 export const getClient = async (req: Request, res: Response) => {
   const { id } = req.params;
+  const { order } = req.query;
 
   try {
     const client = await prisma.client.findUnique({
@@ -68,7 +70,7 @@ export const getClient = async (req: Request, res: Response) => {
             paid_out: true
           },
           orderBy: {
-            id: 'asc'
+            id: order === 'desc' ? 'desc' : 'asc'
           }
         }
       }
@@ -78,12 +80,18 @@ export const getClient = async (req: Request, res: Response) => {
       return res.status(400).json({ error: { type: 'id', message: 'Cliente não encontrado.' } });
 
     let status = 'Em dia';
-    const inadimplenteRecord = client.Record.find(
+    const expiredRecord = client.Record.find(
       (record) => !record.paid_out && new Date(record.due_date) < new Date()
     );
-    if (inadimplenteRecord) {
+    if (expiredRecord) {
       status = 'Inadimplente';
     }
+
+    const formattedRecords = client.Record.map((record) => ({
+      ...record,
+      due_date: formatDate(record.due_date),
+      value: formatValue(record.value)
+    }));
 
     const data = {
       id: client.id,
@@ -99,11 +107,11 @@ export const getClient = async (req: Request, res: Response) => {
       city: client.city,
       uf: client.uf,
       status,
-      records: client.Record
+      records: formattedRecords
     };
 
     res.status(200).json(data);
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };

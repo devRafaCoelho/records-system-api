@@ -11,6 +11,15 @@ export const registerRecord = async (req: Request, res: Response) => {
   const dueDate = new Date(due_date);
 
   try {
+    const client = await prisma.client.findUnique({
+      where: {
+        id: id_clients
+      }
+    });
+
+    if (!client)
+      return res.status(400).json({ error: { type: 'id', message: 'Cliente não encontrado.' } });
+
     const data = {
       id_clients,
       description,
@@ -21,13 +30,10 @@ export const registerRecord = async (req: Request, res: Response) => {
 
     const registeredRecord = await prisma.record.create({ data });
 
-    const formattedDueDate = formatDate(registeredRecord.due_date);
-    const formattedValue = formatValue(registeredRecord.value);
-
     const formatedResponse = {
       ...registeredRecord,
-      due_date: formattedDueDate,
-      value: formattedValue
+      due_date: formatDate(registeredRecord.due_date),
+      value: formatValue(registeredRecord.value)
     };
 
     return res.status(201).json(formatedResponse);
