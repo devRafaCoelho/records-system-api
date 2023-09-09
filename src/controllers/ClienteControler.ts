@@ -1,10 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
-import { transporter } from '../config/nodemailer';
-import { Login, NewPassword, RegisterUser, UpdateUser } from '../types/UserTypes';
-import { compilerHtml } from '../utils/compilerHtml';
 import { RegisterClient } from '../types/ClientTypes';
 
 const prisma = new PrismaClient();
