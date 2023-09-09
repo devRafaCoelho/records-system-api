@@ -16,7 +16,12 @@ import {
   NewPasswordSchema
 } from './schemas/UserSchemas';
 import { RegisterClientSchema } from './schemas/ClientSchemas';
-import { getClient, registerClient, updateClient } from './controllers/ClienteControler';
+import {
+  deleteClient,
+  getClient,
+  registerClient,
+  updateClient
+} from './controllers/ClienteControler';
 import { RegisterRecordSchema } from './schemas/RecordsSchemas';
 import { registerRecord } from './controllers/RecordController';
 
@@ -35,6 +40,7 @@ routes.delete('/user', deleteUser);
 routes.post('/client', ValidateRequest(RegisterClientSchema), registerClient);
 routes.get('/client/:id', getClient);
 routes.put('/client/:id', updateClient);
+routes.delete('/client/:id', deleteClient);
 
 routes.post('/record', ValidateRequest(RegisterRecordSchema), registerRecord);
 

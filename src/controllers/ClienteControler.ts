@@ -147,7 +147,16 @@ export const updateClient = async (req: Request, res: Response) => {
   };
 
   try {
-    const client = await prisma.client.findFirst({
+    const client = await prisma.client.findUnique({
+      where: {
+        id: parseInt(id)
+      }
+    });
+
+    if (!client)
+      return res.status(400).json({ error: { type: 'id', message: 'Cliente não encontrado.' } });
+
+    const clientData = await prisma.client.findFirst({
       where: {
         OR: [
           { email: email, NOT: { id: parseInt(id) } },
@@ -156,12 +165,12 @@ export const updateClient = async (req: Request, res: Response) => {
       }
     });
 
-    if (client) {
-      if (client.email === email) {
+    if (clientData) {
+      if (clientData.email === email) {
         return res.status(400).json({ error: { type: 'email', message: 'E-mail já cadastrado.' } });
       }
 
-      if (client.cpf === cpf) {
+      if (clientData.cpf === cpf) {
         return res.status(400).json({ error: { type: 'cpf', message: 'CPF já cadastrado.' } });
       }
     }
@@ -175,6 +184,31 @@ export const updateClient = async (req: Request, res: Response) => {
 
     return res.status(204).send();
   } catch {
+    return res.status(500).json({ message: 'Erro interno do servidor' });
+  }
+};
+
+export const deleteClient = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const client = await prisma.client.findUnique({
+    where: {
+      id: parseInt(id)
+    }
+  });
+
+  if (!client)
+    return res.status(400).json({ error: { type: 'id', message: 'Cliente não encontrado.' } });
+
+  try {
+    await prisma.$transaction([
+      prisma.record.deleteMany({ where: { id_clients: parseInt(id) } }),
+      prisma.client.delete({ where: { id: parseInt(id) } })
+    ]);
+
+    return res.status(204).send();
+  } catch (error) {
+    console.error(error);
     return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };
