@@ -54,3 +54,22 @@ export const registerClient = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };
+
+export const getClient = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const client = await prisma.client.findUnique({
+      where: {
+        id: parseInt(id)
+      }
+    });
+
+    if (!client)
+      return res.status(400).json({ error: { type: 'id', message: 'Cliente não encontrado.' } });
+
+    res.status(200).json(client);
+  } catch {
+    return res.status(500).json({ message: 'Erro interno do servidor' });
+  }
+};
