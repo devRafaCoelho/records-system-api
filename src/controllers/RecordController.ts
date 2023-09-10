@@ -1,12 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
-import { RegisterRecord } from '../types/RecordTypes';
+import { Record, UpdateRecord } from '../types/RecordTypes';
 import { formatDate, formatValue } from '../utils/format';
 
 const prisma = new PrismaClient();
 
 export const registerRecord = async (req: Request, res: Response) => {
-  const { id_clients, description, due_date, value, paid_out }: RegisterRecord = req.body;
+  const { id_clients, description, due_date, value, paid_out }: Record = req.body;
 
   const dueDate = new Date(due_date);
 
@@ -72,6 +72,42 @@ export const getRecord = async (req: Request, res: Response) => {
     };
 
     return res.status(200).json(data);
+  } catch {
+    return res.status(500).json({ message: 'Erro interno do servidor' });
+  }
+};
+
+export const updateRecord = async (req: Request, res: Response) => {
+  const { description, due_date, value, paid_out }: UpdateRecord = req.body;
+  const { id } = req.params;
+
+  const dueDate = new Date(due_date);
+
+  const data = {
+    description,
+    due_date: dueDate,
+    value,
+    paid_out
+  };
+
+  try {
+    const record = await prisma.record.findUnique({
+      where: {
+        id: parseInt(id)
+      }
+    });
+
+    if (!record)
+      return res.status(400).json({ error: { type: 'id', message: 'Cobrança não encontrada.' } });
+
+    await prisma.record.update({
+      where: {
+        id: parseInt(id)
+      },
+      data: data
+    });
+
+    return res.status(204).send();
   } catch {
     return res.status(500).json({ message: 'Erro interno do servidor' });
   }

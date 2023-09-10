@@ -215,8 +215,7 @@ export const deleteClient = async (req: Request, res: Response) => {
     ]);
 
     return res.status(204).send();
-  } catch (error) {
-    console.error(error);
+  } catch {
     return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };
