@@ -246,8 +246,6 @@ export const listClients = async (req: Request, res: Response) => {
       }
     });
 
-    const totalClients = await prisma.client.count();
-
     function setStatus(records: any) {
       const expiredRecord = records.find(
         (record: any) => !record.paid_out && new Date(record.due_date) < new Date()
@@ -282,24 +280,24 @@ export const listClients = async (req: Request, res: Response) => {
     }
 
     if (name) {
-      const lowercaseName = typeof name === 'string' ? name.toLowerCase() : name;
-
-      formattedClients = formattedClients.filter(
-        (client) =>
-          client.firstName.toLowerCase() === lowercaseName ||
-          client.lastName.toLowerCase() === lowercaseName
-      );
+      if (typeof name === 'string') {
+        formattedClients = formattedClients.filter(
+          (client) =>
+            client.firstName.toLowerCase().includes(name.toLowerCase()) ||
+            client.lastName.toLowerCase().includes(name.toLowerCase())
+        );
+      }
 
       if (formattedClients.length === 0) {
         return res
           .status(400)
-          .json({ error: { type: 'name', message: 'Nenhum Cliente encontrado.' } });
+          .json({ error: { type: 'name', message: 'Nenhuma cobrança encontrada.' } });
       }
     }
 
     const response = {
-      totalClients,
-      totalPages: Math.ceil(totalClients / perPage),
+      totalClients: formattedClients.length,
+      totalPages: Math.ceil(formattedClients.length / perPage),
       currentPage: page,
       clients: formattedClients
     };
