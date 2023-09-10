@@ -31,6 +31,7 @@ import {
   registerRecord,
   updateRecord
 } from './controllers/RecordController';
+import { home } from './controllers/HomeController';
 
 const routes = Router();
 
@@ -55,5 +56,7 @@ routes.get('/record', listRecords);
 routes.get('/record/:id', getRecord);
 routes.put('/record/:id', updateRecord);
 routes.delete('/record/:id', deleteRecord);
+
+routes.get('/home', home);
 
 export default routes;
