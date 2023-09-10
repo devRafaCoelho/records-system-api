@@ -24,7 +24,14 @@ import {
   updateClient
 } from './controllers/ClienteControler';
 import { RegisterRecordSchema } from './schemas/RecordsSchemas';
-import { registerRecord } from './controllers/RecordController';
+import {
+  deleteRecord,
+  getRecord,
+  listRecords,
+  registerRecord,
+  updateRecord
+} from './controllers/RecordController';
+import { home } from './controllers/HomeController';
 
 const routes = Router();
 
@@ -45,5 +52,11 @@ routes.put('/client/:id', updateClient);
 routes.delete('/client/:id', deleteClient);
 
 routes.post('/record', ValidateRequest(RegisterRecordSchema), registerRecord);
+routes.get('/record', listRecords);
+routes.get('/record/:id', getRecord);
+routes.put('/record/:id', updateRecord);
+routes.delete('/record/:id', deleteRecord);
+
+routes.get('/home', home);
 
 export default routes;

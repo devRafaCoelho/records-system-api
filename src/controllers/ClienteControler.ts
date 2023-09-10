@@ -79,19 +79,27 @@ export const getClient = async (req: Request, res: Response) => {
     if (!client)
       return res.status(400).json({ error: { type: 'id', message: 'Cliente não encontrado.' } });
 
-    let status = 'Em dia';
-    const expiredRecord = client.Record.find(
-      (record) => !record.paid_out && new Date(record.due_date) < new Date()
-    );
-    if (expiredRecord) {
-      status = 'Inadimplente';
-    }
+    let clientStatus = 'Em dia';
 
-    const formattedRecords = client.Record.map((record) => ({
-      ...record,
-      due_date: formatDate(record.due_date),
-      value: formatValue(record.value)
-    }));
+    const formattedRecords = client.Record.map((record) => {
+      const getStatus = () => {
+        if (record.paid_out) return 'Paga';
+        if (new Date(record.due_date) < new Date()) return 'Vencida';
+        return 'Pendente';
+      };
+
+      return {
+        ...record,
+        due_date: formatDate(record.due_date),
+        value: formatValue(record.value),
+        status: getStatus()
+      };
+    });
+
+    const expiredRecord = formattedRecords.find((record) => record.status === 'Vencida');
+    if (expiredRecord) {
+      clientStatus = 'Inadimplente';
+    }
 
     const data = {
       id: client.id,
@@ -106,11 +114,11 @@ export const getClient = async (req: Request, res: Response) => {
       district: client.district,
       city: client.city,
       uf: client.uf,
-      status,
+      status: clientStatus,
       records: formattedRecords
     };
 
-    res.status(200).json(data);
+    return res.status(200).json(data);
   } catch {
     return res.status(500).json({ message: 'Erro interno do servidor' });
   }
@@ -207,8 +215,7 @@ export const deleteClient = async (req: Request, res: Response) => {
     ]);
 
     return res.status(204).send();
-  } catch (error) {
-    console.error(error);
+  } catch {
     return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };
@@ -275,7 +282,13 @@ export const listClients = async (req: Request, res: Response) => {
     }
 
     if (name) {
-      formattedClients = formattedClients.filter((client) => client.firstName === name);
+      const lowercaseName = typeof name === 'string' ? name.toLowerCase() : name;
+
+      formattedClients = formattedClients.filter(
+        (client) =>
+          client.firstName.toLowerCase() === lowercaseName ||
+          client.lastName.toLowerCase() === lowercaseName
+      );
 
       if (formattedClients.length === 0) {
         return res
