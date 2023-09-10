@@ -282,7 +282,13 @@ export const listClients = async (req: Request, res: Response) => {
     }
 
     if (name) {
-      formattedClients = formattedClients.filter((client) => client.firstName === name);
+      const lowercaseName = typeof name === 'string' ? name.toLowerCase() : name;
+
+      formattedClients = formattedClients.filter(
+        (client) =>
+          client.firstName.toLowerCase() === lowercaseName ||
+          client.lastName.toLowerCase() === lowercaseName
+      );
 
       if (formattedClients.length === 0) {
         return res
