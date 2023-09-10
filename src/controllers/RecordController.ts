@@ -112,3 +112,26 @@ export const updateRecord = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };
+
+export const deleteRecord = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const record = await prisma.record.findUnique({
+    where: {
+      id: parseInt(id)
+    }
+  });
+
+  if (!record)
+    return res.status(400).json({ error: { type: 'id', message: 'Cobrança não encontrada.' } });
+
+  try {
+    await prisma.record.delete({
+      where: { id: parseInt(id) }
+    });
+
+    return res.status(204).send();
+  } catch {
+    return res.status(500).json({ message: 'Erro interno do servidor' });
+  }
+};
