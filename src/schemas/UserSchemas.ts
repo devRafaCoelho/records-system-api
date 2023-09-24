@@ -4,19 +4,19 @@ import { isValidNumber, CountryCode } from 'libphonenumber-js';
 
 export const RegisterUserSchema = Joi.object({
   firstName: Joi.string().required().messages({
-    'any.required': 'The firstName is required.',
-    'string.empty': 'The firstName is required.',
-    'string.base': 'The firstName must be a valid name.'
+    'any.required': 'O Primeiro Nome é obrigatório.',
+    'string.empty': 'O Primeiro Nome é obrigatório.',
+    'string.base': 'O Primeiro Nome precisa ser um nome válido.'
   }),
   lastName: Joi.string().required().messages({
-    'any.required': 'The lastName is required.',
-    'string.empty': 'The lastName is required.',
-    'string.base': 'The lastName must be a valid name.'
+    'any.required': 'O Último Nome é obrigatório.',
+    'string.empty': 'O Último Nome é obrigatório.',
+    'string.base': 'O Último Nome precisa ser um nome válido.'
   }),
   email: Joi.string().email().required().messages({
     'string.email': 'O Email precisa ser válido.',
-    'any.required': 'The email is required.',
-    'string.empty': 'The email is required.'
+    'any.required': 'O Email é obrigatório.',
+    'string.empty': 'O Email é obrigatório.'
   }),
   cpf: Joi.string()
     .custom((value: string, helpers: any) => {
@@ -49,14 +49,14 @@ export const RegisterUserSchema = Joi.object({
       'string.length': 'Número de telefone inválido'
     }),
   password: Joi.string().min(5).required().messages({
-    'any.required': 'The password is required.',
-    'string.empty': 'The password is required.',
+    'any.required': 'A Senha é obrigatória.',
+    'string.empty': 'A Senha é obrigatória.',
     'string.min': 'A Senha precisa conter, no mínimo, 5 caracteres.'
   }),
   confirmPassword: Joi.any().valid(Joi.ref('password')).required().messages({
     'any.only': 'As senhas não coincidem.',
-    'any.required': 'The confirmPassword is required.',
-    'any.empty': 'The confirmPassword is required.'
+    'any.required': 'A confirmação da senha é obrigatória.',
+    'any.empty': 'A confirmação da senha é obrigatória.'
   })
 });
 
