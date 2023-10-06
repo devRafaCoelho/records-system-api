@@ -23,11 +23,13 @@ export const registerClient = async (req: Request, res: Response) => {
   try {
     const emailExists = await prisma.client.findUnique({ where: { email } });
     if (emailExists)
-      return res.status(400).json({ error: { type: 'email', message: 'E-mail já cadastrado.' } });
+      return res
+        .status(400)
+        .json({ error: { type: 'email', message: 'E-mail already registered.' } });
 
     const cpfExists = await prisma.client.findFirst({ where: { cpf } });
     if (cpfExists)
-      return res.status(400).json({ error: { type: 'cpf', message: 'CPF já cadastrado.' } });
+      return res.status(400).json({ error: { type: 'cpf', message: 'CPF already registered.' } });
 
     const data = {
       firstName,
@@ -47,7 +49,7 @@ export const registerClient = async (req: Request, res: Response) => {
 
     return res.status(201).json(registeredClient);
   } catch {
-    return res.status(500).json({ message: 'Erro interno do servidor' });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
@@ -77,15 +79,15 @@ export const getClient = async (req: Request, res: Response) => {
     });
 
     if (!client)
-      return res.status(400).json({ error: { type: 'id', message: 'Cliente não encontrado.' } });
+      return res.status(400).json({ error: { type: 'id', message: 'Client not found.' } });
 
-    let clientStatus = 'Em dia';
+    let clientStatus = 'up-to-date';
 
     const formattedRecords = client.Record.map((record) => {
       const getStatus = () => {
-        if (record.paid_out) return 'Paga';
-        if (new Date(record.due_date) < new Date()) return 'Vencida';
-        return 'Pendente';
+        if (record.paid_out) return 'payed';
+        if (new Date(record.due_date) < new Date()) return 'expired';
+        return 'pending';
       };
 
       return {
@@ -96,9 +98,9 @@ export const getClient = async (req: Request, res: Response) => {
       };
     });
 
-    const expiredRecord = formattedRecords.find((record) => record.status === 'Vencida');
+    const expiredRecord = formattedRecords.find((record) => record.status === 'expired');
     if (expiredRecord) {
-      clientStatus = 'Inadimplente';
+      clientStatus = 'defaulter';
     }
 
     const data = {
@@ -120,7 +122,7 @@ export const getClient = async (req: Request, res: Response) => {
 
     return res.status(200).json(data);
   } catch {
-    return res.status(500).json({ message: 'Erro interno do servidor' });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
@@ -162,7 +164,7 @@ export const updateClient = async (req: Request, res: Response) => {
     });
 
     if (!client)
-      return res.status(400).json({ error: { type: 'id', message: 'Cliente não encontrado.' } });
+      return res.status(400).json({ error: { type: 'id', message: 'Client not found.' } });
 
     const clientData = await prisma.client.findFirst({
       where: {
@@ -175,11 +177,13 @@ export const updateClient = async (req: Request, res: Response) => {
 
     if (clientData) {
       if (clientData.email === email) {
-        return res.status(400).json({ error: { type: 'email', message: 'E-mail já cadastrado.' } });
+        return res
+          .status(400)
+          .json({ error: { type: 'email', message: 'E-mail already registered.' } });
       }
 
       if (clientData.cpf === cpf) {
-        return res.status(400).json({ error: { type: 'cpf', message: 'CPF já cadastrado.' } });
+        return res.status(400).json({ error: { type: 'cpf', message: 'CPF already registered.' } });
       }
     }
 
@@ -192,7 +196,7 @@ export const updateClient = async (req: Request, res: Response) => {
 
     return res.status(204).send();
   } catch {
-    return res.status(500).json({ message: 'Erro interno do servidor' });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
@@ -205,8 +209,7 @@ export const deleteClient = async (req: Request, res: Response) => {
     }
   });
 
-  if (!client)
-    return res.status(400).json({ error: { type: 'id', message: 'Cliente não encontrado.' } });
+  if (!client) return res.status(400).json({ error: { type: 'id', message: 'Client not found.' } });
 
   try {
     await prisma.$transaction([
@@ -216,7 +219,7 @@ export const deleteClient = async (req: Request, res: Response) => {
 
     return res.status(204).send();
   } catch {
-    return res.status(500).json({ message: 'Erro interno do servidor' });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
@@ -250,7 +253,7 @@ export const listClients = async (req: Request, res: Response) => {
       const expiredRecord = records.find(
         (record: any) => !record.paid_out && new Date(record.due_date) < new Date()
       );
-      return expiredRecord ? 'Inadimplente' : 'Em dia';
+      return expiredRecord ? 'defaulter' : 'up-to-date';
     }
 
     let formattedClients = allClients.map((client) => ({
@@ -273,9 +276,7 @@ export const listClients = async (req: Request, res: Response) => {
       formattedClients = formattedClients.filter((client) => client.status === status);
 
       if (formattedClients.length === 0) {
-        return res
-          .status(400)
-          .json({ error: { type: 'status', message: 'Nenhum Cliente encontrado.' } });
+        return res.status(400).json({ error: { type: 'status', message: 'No clients found.' } });
       }
     }
 
@@ -289,9 +290,7 @@ export const listClients = async (req: Request, res: Response) => {
       }
 
       if (formattedClients.length === 0) {
-        return res
-          .status(400)
-          .json({ error: { type: 'name', message: 'Nenhuma cobrança encontrada.' } });
+        return res.status(400).json({ error: { type: 'name', message: 'No records found.' } });
       }
     }
 
@@ -304,6 +303,6 @@ export const listClients = async (req: Request, res: Response) => {
 
     return res.status(200).json(response);
   } catch {
-    return res.status(500).json({ message: 'Erro interno do servidor' });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
