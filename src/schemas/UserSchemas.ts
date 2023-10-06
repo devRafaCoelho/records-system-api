@@ -51,7 +51,7 @@ export const RegisterUserSchema = Joi.object({
   password: Joi.string().min(5).required().messages({
     'any.required': 'The password is required.',
     'string.empty': 'The password is required.',
-    'string.min': 'The Password must contain at least 5 characters.'
+    'string.min': 'The password must contain at least 5 characters.'
   }),
   confirmPassword: Joi.any().valid(Joi.ref('password')).required().messages({
     'any.only': 'The passwords do not match.',
