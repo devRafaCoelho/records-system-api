@@ -18,7 +18,7 @@ export const registerRecord = async (req: Request, res: Response) => {
     });
 
     if (!client)
-      return res.status(400).json({ error: { type: 'id', message: 'Cliente não encontrado.' } });
+      return res.status(400).json({ error: { type: 'id', message: 'Client not found.' } });
 
     const data = {
       id_clients,
@@ -38,7 +38,7 @@ export const registerRecord = async (req: Request, res: Response) => {
 
     return res.status(201).json(formatedResponse);
   } catch {
-    return res.status(500).json({ message: 'Erro interno do servidor' });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
@@ -53,12 +53,12 @@ export const getRecord = async (req: Request, res: Response) => {
     });
 
     if (!record)
-      return res.status(400).json({ error: { type: 'id', message: 'Cobrança não encontrada.' } });
+      return res.status(400).json({ error: { type: 'id', message: 'Record not found.' } });
 
     const setStatus = () => {
-      if (record.paid_out) return 'Paga';
-      if (new Date(record.due_date) < new Date()) return 'Vencida';
-      return 'Pendente';
+      if (record.paid_out) return 'payed';
+      if (new Date(record.due_date) < new Date()) return 'expired';
+      return 'pending';
     };
 
     const data = {
@@ -73,7 +73,7 @@ export const getRecord = async (req: Request, res: Response) => {
 
     return res.status(200).json(data);
   } catch {
-    return res.status(500).json({ message: 'Erro interno do servidor' });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
@@ -98,7 +98,7 @@ export const updateRecord = async (req: Request, res: Response) => {
     });
 
     if (!record)
-      return res.status(400).json({ error: { type: 'id', message: 'Cobrança não encontrada.' } });
+      return res.status(400).json({ error: { type: 'id', message: 'Record not found.' } });
 
     await prisma.record.update({
       where: {
@@ -109,7 +109,7 @@ export const updateRecord = async (req: Request, res: Response) => {
 
     return res.status(204).send();
   } catch {
-    return res.status(500).json({ message: 'Erro interno do servidor' });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
@@ -122,8 +122,7 @@ export const deleteRecord = async (req: Request, res: Response) => {
     }
   });
 
-  if (!record)
-    return res.status(400).json({ error: { type: 'id', message: 'Cobrança não encontrada.' } });
+  if (!record) return res.status(400).json({ error: { type: 'id', message: 'Record not found.' } });
 
   try {
     await prisma.record.delete({
@@ -132,7 +131,7 @@ export const deleteRecord = async (req: Request, res: Response) => {
 
     return res.status(204).send();
   } catch {
-    return res.status(500).json({ message: 'Erro interno do servidor' });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
@@ -159,9 +158,9 @@ export const listRecords = async (req: Request, res: Response) => {
     });
 
     const setStatus = (record: any) => {
-      if (record.paid_out) return 'Paga';
-      if (new Date(record.due_date) < new Date()) return 'Vencida';
-      return 'Pendente';
+      if (record.paid_out) return 'payed';
+      if (new Date(record.due_date) < new Date()) return 'expired';
+      return 'pending';
     };
 
     const clientIds = allRecords.map((record) => record.id_clients);
@@ -193,9 +192,7 @@ export const listRecords = async (req: Request, res: Response) => {
       formattedRecords = formattedRecords.filter((record) => record.status === status);
 
       if (formattedRecords.length === 0) {
-        return res
-          .status(400)
-          .json({ error: { type: 'status', message: 'Nenhuma cobrança encontrada.' } });
+        return res.status(400).json({ error: { type: 'status', message: 'No records found.' } });
       }
     }
 
@@ -207,9 +204,7 @@ export const listRecords = async (req: Request, res: Response) => {
       }
 
       if (formattedRecords.length === 0) {
-        return res
-          .status(400)
-          .json({ error: { type: 'name', message: 'Nenhuma cobrança encontrada.' } });
+        return res.status(400).json({ error: { type: 'name', message: 'No records found.' } });
       }
     }
 
@@ -217,9 +212,7 @@ export const listRecords = async (req: Request, res: Response) => {
       formattedRecords = formattedRecords.filter((record) => record.due_date === date);
 
       if (formattedRecords.length === 0) {
-        return res
-          .status(400)
-          .json({ error: { type: 'date', message: 'Nenhuma cobrança encontrada.' } });
+        return res.status(400).json({ error: { type: 'date', message: 'No records found.' } });
       }
     }
 
@@ -232,6 +225,6 @@ export const listRecords = async (req: Request, res: Response) => {
 
     return res.status(200).json(response);
   } catch {
-    return res.status(500).json({ message: 'Erro interno do servidor' });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };

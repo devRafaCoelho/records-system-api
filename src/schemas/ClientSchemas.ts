@@ -4,19 +4,19 @@ import { isValidNumber, CountryCode } from 'libphonenumber-js';
 
 export const RegisterClientSchema = Joi.object({
   firstName: Joi.string().required().messages({
-    'any.required': 'O Primeiro Nome é obrigatório.',
-    'string.empty': 'O Primeiro Nome é obrigatório.',
-    'string.base': 'O Primeiro Nome precisa ser um nome válido.'
+    'any.required': 'The first name is required.',
+    'string.empty': 'The first name is required.',
+    'string.base': 'The first name must be a valid name.'
   }),
   lastName: Joi.string().required().messages({
-    'any.required': 'O Último Nome é obrigatório.',
-    'string.empty': 'O Último Nome é obrigatório.',
-    'string.base': 'O Último Nome precisa ser um nome válido.'
+    'any.required': 'The last name is required.',
+    'string.empty': 'The last name is required.',
+    'string.base': 'The last name must be a valid name.'
   }),
   email: Joi.string().email().required().messages({
-    'string.email': 'O Email precisa ser válido.',
-    'any.required': 'O Email é obrigatório.',
-    'string.empty': 'O Email é obrigatório.'
+    'string.email': 'The e-mail must be valid.',
+    'any.required': 'The e-mail is required.',
+    'string.empty': 'The e-mail is required.'
   }),
   cpf: Joi.string()
     .custom((value: string, helpers: any) => {
@@ -29,11 +29,11 @@ export const RegisterClientSchema = Joi.object({
     .trim()
     .required()
     .messages({
-      'any.required': 'O CPF é obrigatório.',
-      'string.empty': 'O CPF é obrigatório.',
-      'any.invalid': 'CPF inválido',
-      'string.pattern.base': 'CPF inválido',
-      'string.length': 'CPF inválido'
+      'any.required': 'The CPF is required.',
+      'string.empty': 'The CPF is required.',
+      'any.invalid': 'Invalid CPF.',
+      'string.pattern.base': 'Invalid CPF.',
+      'string.length': 'Invalid CPF.'
     }),
   phone: Joi.string()
     .custom((value: string, helpers: any) => {
@@ -46,42 +46,42 @@ export const RegisterClientSchema = Joi.object({
     .trim()
     .required()
     .messages({
-      'any.required': 'O Número de telefone é obrigatório.',
-      'string.empty': 'O Número de telefone é obrigatório.',
-      'any.invalid': 'Número de telefone inválido',
-      'string.pattern.base': 'Número de telefone inválido',
-      'string.length': 'Número de telefone inválido'
+      'any.required': 'The phone number is required.',
+      'string.empty': 'The phone number is required.',
+      'any.invalid': 'Invalid phone number.',
+      'string.pattern.base': 'Invalid phone number.',
+      'string.length': 'Invalid phone number.'
     }),
   address: Joi.string().trim().messages({
-    'string.base': 'Endereço inválido',
-    'string.empty': 'Endereço inválido'
+    'string.base': 'Invalid address.',
+    'string.empty': 'Invalid address.'
   }),
   complement: Joi.string().trim().messages({
-    'string.base': 'Complemento inválido',
-    'string.empty': 'Complemento inválido'
+    'string.base': 'Invalid complement.',
+    'string.empty': 'Invalid complement.'
   }),
   zip_code: Joi.string()
     .regex(/^\d{8}$/)
     .trim()
     .messages({
-      'string.pattern.base': 'O campo CEP deve ser composto por apenas 8 números',
-      'string.length': 'O campo CEP deve ser composto por apenas 8 números',
-      'string.empty': 'O campo CEP deve ser composto por apenas 8 números'
+      'string.pattern.base': 'Invalid CEP.',
+      'string.length': 'Invalid CEP.',
+      'string.empty': 'Invalid CEP.'
     }),
   district: Joi.string().trim().messages({
-    'string.base': 'Bairro inválido',
-    'string.empty': 'Bairro inválido'
+    'string.base': 'Invalid neighborhood.',
+    'string.empty': 'Invalid neighborhood.'
   }),
   city: Joi.string().trim().messages({
-    'string.base': 'Cidade inválida',
-    'string.empty': 'Cidade inválida'
+    'string.base': 'Invalid city.',
+    'string.empty': 'Invalid city.'
   }),
   uf: Joi.string()
     .regex(/^[A-Z]{2}$/)
     .trim()
     .messages({
-      'string.pattern.base': 'O campo Estado deve ser composto por apenas duas letras maiúsculas',
-      'string.length': 'O campo Estado deve ser composto por apenas duas letras maiúsculas',
-      'string.empty': 'O campo Estado deve ser composto por apenas duas letras maiúsculas'
+      'string.pattern.base': 'Invalid state.',
+      'string.length': 'Invalid state.',
+      'string.empty': 'Invalid state.'
     })
 });

@@ -14,12 +14,14 @@ export const registerUser = async (req: Request, res: Response) => {
   try {
     const emailExists = await prisma.user.findUnique({ where: { email } });
     if (emailExists)
-      return res.status(400).json({ error: { type: 'email', message: 'E-mail já cadastrado.' } });
+      return res
+        .status(400)
+        .json({ error: { type: 'email', message: 'E-mail already registered.' } });
 
     if (cpf) {
       const cpfExists = await prisma.user.findFirst({ where: { cpf } });
       if (cpfExists)
-        return res.status(400).json({ error: { type: 'cpf', message: 'CPF já cadastrado.' } });
+        return res.status(400).json({ error: { type: 'cpf', message: 'CPF already registered.' } });
     }
 
     const encryptedPassword = await bcrypt.hash(password, 10);
@@ -48,7 +50,7 @@ export const registerUser = async (req: Request, res: Response) => {
 
     return res.status(201).json(userData);
   } catch {
-    return res.status(500).json({ message: 'Erro interno do servidor' });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
@@ -58,11 +60,11 @@ export const login = async (req: Request, res: Response) => {
   try {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user)
-      return res.status(400).json({ error: { type: 'email', message: 'E-mail inválido.' } });
+      return res.status(400).json({ error: { type: 'email', message: 'Invalid e-mail.' } });
 
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword)
-      return res.status(400).json({ error: { type: 'password', message: 'Senha inválida.' } });
+      return res.status(400).json({ error: { type: 'password', message: 'Invalid password.' } });
 
     const token = jwt.sign({ id: user.id }, '123456', {
       expiresIn: '8h'
@@ -72,7 +74,7 @@ export const login = async (req: Request, res: Response) => {
 
     return res.status(201).json({ user: userData, token });
   } catch {
-    return res.status(500).json({ message: 'Erro interno do servidor' });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
@@ -80,7 +82,7 @@ export const getUser = async (req: Request, res: Response) => {
   try {
     return res.status(200).json(req.user);
   } catch {
-    return res.status(500).json({ message: 'Erro interno do servidor' });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
@@ -107,23 +109,25 @@ export const updateUser = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(400).json({ error: { type: 'id', message: 'Usuário não encontrado.' } });
+      return res.status(400).json({ error: { type: 'id', message: 'User not found.' } });
     }
 
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword)
-      return res.status(400).json({ error: { type: 'password', message: 'Senha inválida.' } });
+      return res.status(400).json({ error: { type: 'password', message: 'Invalid password.' } });
 
     const emailExists =
       userEmail !== email ? await prisma.user.findUnique({ where: { email: email } }) : null;
     if (emailExists)
-      return res.status(400).json({ error: { type: 'email', message: 'E-mail já cadastrado.' } });
+      return res
+        .status(400)
+        .json({ error: { type: 'email', message: 'E-mail already registered.' } });
 
     if (cpf) {
       const cpfExists =
         userCpf !== cpf ? await prisma.user.findFirst({ where: { cpf: cpf } }) : null;
       if (cpfExists)
-        return res.status(400).json({ error: { type: 'cpf', message: 'CPF já cadastrado.' } });
+        return res.status(400).json({ error: { type: 'cpf', message: 'CPF already registered.' } });
     }
 
     await prisma.user.update({
@@ -133,7 +137,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
     return res.status(204).send();
   } catch {
-    return res.status(500).json({ message: 'Erro interno do servidor' });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
@@ -155,12 +159,12 @@ export const newPassword = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(400).json({ error: { type: 'id', message: 'Usuário não encontrado.' } });
+      return res.status(400).json({ error: { type: 'id', message: 'User not found.' } });
     }
 
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword)
-      return res.status(400).json({ error: { type: 'password', message: 'Senha inválida.' } });
+      return res.status(400).json({ error: { type: 'password', message: 'Invalid password.' } });
 
     await prisma.user.update({
       where: { id: id },
@@ -169,7 +173,7 @@ export const newPassword = async (req: Request, res: Response) => {
 
     return res.status(204).send();
   } catch {
-    return res.status(500).json({ message: 'Erro interno do servidor' });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
@@ -183,6 +187,6 @@ export const deleteUser = async (req: Request, res: Response) => {
 
     return res.status(204).send();
   } catch {
-    return res.status(500).json({ message: 'Erro interno do servidor' });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
