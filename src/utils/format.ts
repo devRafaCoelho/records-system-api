@@ -16,3 +16,9 @@ export const formatName = (name: any) =>
 export const formatCpf = (cpf: any) => {
   return cpf ? cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4') : null;
 };
+
+export const formatPhone = (phone: any) => {
+  return phone
+    ? phone.replace(/\D/g, '').replace(/^(55)(\d{2})(\d)(\d{4})(\d{4})$/, '+$1 ($2) $3 $4-$5')
+    : null;
+};

@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
 import { Client } from '../types/ClientTypes';
-import { formatDate, formatValue } from '../utils/format';
+import { formatCpf, formatDate, formatName, formatPhone, formatValue } from '../utils/format';
 
 const prisma = new PrismaClient();
 
@@ -224,7 +224,7 @@ export const deleteClient = async (req: Request, res: Response) => {
 };
 
 export const listClients = async (req: Request, res: Response) => {
-  const { order, status, name, page: pageQuery = '1', perPage: perPageQuery = '10' } = req.query;
+  const { order, status, name, page: pageQuery = '1', perPage: perPageQuery = '25' } = req.query;
   const page = Number(pageQuery);
   const perPage = Number(perPageQuery);
   const offset = (page - 1) * perPage;
@@ -258,11 +258,11 @@ export const listClients = async (req: Request, res: Response) => {
 
     let formattedClients = allClients.map((client) => ({
       id: client.id,
-      firstName: client.firstName,
-      lastName: client.lastName,
+      firstName: formatName(client.firstName),
+      lastName: formatName(client.lastName),
       email: client.email,
-      cpf: client.cpf,
-      phone: client.phone,
+      cpf: formatCpf(client.cpf),
+      phone: formatPhone(client.phone),
       address: client.address,
       complement: client.complement,
       zip_code: client.zip_code,
