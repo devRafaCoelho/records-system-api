@@ -224,18 +224,20 @@ export const deleteClient = async (req: Request, res: Response) => {
 };
 
 export const listClients = async (req: Request, res: Response) => {
-  const { order, status, name, page: pageQuery = '1', perPage: perPageQuery = '25' } = req.query;
+  const { order, status, name, page: pageQuery = '0', perPage: perPageQuery = '25' } = req.query;
   const page = Number(pageQuery);
   const perPage = Number(perPageQuery);
-  const offset = (page - 1) * perPage;
+  const offset = page * perPage;
 
   try {
-    const allClients = await prisma.client.findMany({
-      orderBy: {
-        id: order === 'desc' ? 'desc' : 'asc'
-      },
+    const totalClients = await prisma.client.count();
+
+    const clients = await prisma.client.findMany({
       skip: offset,
       take: perPage,
+      orderBy: {
+        firstName: order === 'desc' ? 'desc' : 'asc'
+      },
       include: {
         Record: {
           select: {
@@ -256,7 +258,7 @@ export const listClients = async (req: Request, res: Response) => {
       return expiredRecord ? 'defaulter' : 'up-to-date';
     }
 
-    let formattedClients = allClients.map((client) => ({
+    let formattedClients = clients.map((client) => ({
       id: client.id,
       firstName: formatName(client.firstName),
       lastName: formatName(client.lastName),
@@ -294,14 +296,14 @@ export const listClients = async (req: Request, res: Response) => {
       }
     }
 
-    const response = {
-      totalClients: formattedClients.length,
-      totalPages: Math.ceil(formattedClients.length / perPage),
-      currentPage: page,
-      clients: formattedClients
-    };
+    const totalPages = Math.ceil(totalClients / perPage);
 
-    return res.status(200).json(response);
+    return res.status(200).json({
+      page,
+      totalResults: totalClients,
+      totalPages,
+      results: formattedClients
+    });
   } catch {
     return res.status(500).json({ message: 'Internal server error.' });
   }
