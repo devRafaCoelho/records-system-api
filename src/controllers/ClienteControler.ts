@@ -300,9 +300,9 @@ export const listClients = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       page,
-      totalResults: totalClients,
       totalPages,
-      results: formattedClients
+      totalClients,
+      clients: formattedClients
     });
   } catch {
     return res.status(500).json({ message: 'Internal server error.' });
