@@ -86,6 +86,7 @@ export const login = async (req: Request, res: Response) => {
 export const getUser = async (req: Request, res: Response) => {
   try {
     const data = {
+      id: req.user.id,
       firstName: formatName(req.user.firstName),
       lastName: formatName(req.user.lastName),
       email: req.user.email,
