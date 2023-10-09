@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { transporter } from '../config/nodemailer';
 import { Login, NewPassword, RegisterUser, UpdateUser } from '../types/UserTypes';
 import { compilerHtml } from '../utils/compilerHtml';
+import { formatCpf, formatName, formatPhone } from '../utils/format';
 
 const prisma = new PrismaClient();
 
@@ -84,7 +85,15 @@ export const login = async (req: Request, res: Response) => {
 
 export const getUser = async (req: Request, res: Response) => {
   try {
-    return res.status(200).json(req.user);
+    const data = {
+      firstName: formatName(req.user.firstName),
+      lastName: formatName(req.user.lastName),
+      email: req.user.email,
+      cpf: formatCpf(req.user.cpf) || null,
+      phone: formatPhone(req.user.phone) || null
+    };
+
+    return res.status(200).json(data);
   } catch {
     return res.status(500).json({ message: 'Internal server error.' });
   }
