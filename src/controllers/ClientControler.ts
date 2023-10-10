@@ -224,10 +224,10 @@ export const deleteClient = async (req: Request, res: Response) => {
 };
 
 export const listClients = async (req: Request, res: Response) => {
-  const { order, status, name, page: pageQuery = '0', perPage: perPageQuery = '25' } = req.query;
+  const { order, status, name, page: pageQuery = 1, perPage: perPageQuery = 25 } = req.query;
   const page = Number(pageQuery);
   const perPage = Number(perPageQuery);
-  const offset = page * perPage;
+  const offset = (page - 1) * perPage;
 
   try {
     const totalClients = await prisma.client.count();

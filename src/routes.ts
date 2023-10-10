@@ -22,7 +22,7 @@ import {
   listClients,
   registerClient,
   updateClient
-} from './controllers/ClienteControler';
+} from './controllers/ClientControler';
 import { RegisterRecordSchema } from './schemas/RecordsSchemas';
 import {
   deleteRecord,
