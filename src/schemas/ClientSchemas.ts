@@ -52,33 +52,35 @@ export const RegisterClientSchema = Joi.object({
       'string.pattern.base': 'Invalid phone number.',
       'string.length': 'Invalid phone number.'
     }),
-  address: Joi.string().trim().messages({
+  address: Joi.string().trim().allow('').messages({
     'string.base': 'Invalid address.',
     'string.empty': 'Invalid address.'
   }),
-  complement: Joi.string().trim().messages({
+  complement: Joi.string().trim().allow('').messages({
     'string.base': 'Invalid complement.',
     'string.empty': 'Invalid complement.'
   }),
   zip_code: Joi.string()
     .regex(/^\d{8}$/)
     .trim()
+    .allow('')
     .messages({
       'string.pattern.base': 'Invalid CEP.',
       'string.length': 'Invalid CEP.',
       'string.empty': 'Invalid CEP.'
     }),
-  district: Joi.string().trim().messages({
+  district: Joi.string().trim().allow('').messages({
     'string.base': 'Invalid neighborhood.',
     'string.empty': 'Invalid neighborhood.'
   }),
-  city: Joi.string().trim().messages({
+  city: Joi.string().trim().allow('').messages({
     'string.base': 'Invalid city.',
     'string.empty': 'Invalid city.'
   }),
   uf: Joi.string()
     .regex(/^[A-Z]{2}$/)
     .trim()
+    .allow('')
     .messages({
       'string.pattern.base': 'Invalid state.',
       'string.length': 'Invalid state.',
