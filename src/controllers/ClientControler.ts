@@ -237,8 +237,8 @@ export const listClients = async (req: Request, res: Response) => {
       where: name
         ? {
             OR: [
-              { firstName: { contains: String(name) } },
-              { lastName: { contains: String(name) } }
+              { firstName: { contains: String(name), mode: 'insensitive' } },
+              { lastName: { contains: String(name), mode: 'insensitive' } }
             ]
           }
         : {},
@@ -290,9 +290,9 @@ export const listClients = async (req: Request, res: Response) => {
       }
     }
 
+    const paginatedClients = formattedClients.slice(offset, offset + perPage);
     const totalClients = formattedClients.length;
     const totalPages = Math.ceil(totalClients / perPage);
-    const paginatedClients = formattedClients.slice(offset, offset + perPage);
 
     if (page > totalPages) {
       return res.status(400).json({ error: { type: 'page', message: 'No clients found.' } });
