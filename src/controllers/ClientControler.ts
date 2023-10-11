@@ -230,14 +230,18 @@ export const listClients = async (req: Request, res: Response) => {
   const offset = (page - 1) * perPage;
 
   try {
-    const totalClients = await prisma.client.count();
-
     const clients = await prisma.client.findMany({
-      skip: offset,
-      take: perPage,
       orderBy: {
         firstName: order === 'desc' ? 'desc' : 'asc'
       },
+      where: name
+        ? {
+            OR: [
+              { firstName: { contains: String(name) } },
+              { lastName: { contains: String(name) } }
+            ]
+          }
+        : {},
       include: {
         Record: {
           select: {
@@ -250,6 +254,10 @@ export const listClients = async (req: Request, res: Response) => {
         }
       }
     });
+
+    if (clients.length === 0) {
+      return res.status(400).json({ error: { type: 'name', message: 'No clients found.' } });
+    }
 
     function setStatus(records: any) {
       const expiredRecord = records.find(
@@ -282,27 +290,19 @@ export const listClients = async (req: Request, res: Response) => {
       }
     }
 
-    if (name) {
-      if (typeof name === 'string') {
-        formattedClients = formattedClients.filter(
-          (client) =>
-            client.firstName.toLowerCase().includes(name.toLowerCase()) ||
-            client.lastName.toLowerCase().includes(name.toLowerCase())
-        );
-      }
-
-      if (formattedClients.length === 0) {
-        return res.status(400).json({ error: { type: 'name', message: 'No records found.' } });
-      }
-    }
-
+    const totalClients = formattedClients.length;
     const totalPages = Math.ceil(totalClients / perPage);
+    const paginatedClients = formattedClients.slice(offset, offset + perPage);
+
+    if (page > totalPages) {
+      return res.status(400).json({ error: { type: 'page', message: 'No clients found.' } });
+    }
 
     return res.status(200).json({
       page,
       totalPages,
       totalClients,
-      clients: formattedClients
+      clients: paginatedClients
     });
   } catch {
     return res.status(500).json({ message: 'Internal server error.' });
