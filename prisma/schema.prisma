@@ -30,7 +30,8 @@ model Client {
   district   String?
   city       String?
   uf         String?
-  Record     Record[]
+  status     String?
+  Records    Record[]
 }
 
 model Record {

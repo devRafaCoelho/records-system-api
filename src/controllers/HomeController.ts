@@ -11,7 +11,7 @@ export const home = async (req: Request, res: Response) => {
 
     const allClients = await prisma.client.findMany({
       include: {
-        Record: {
+        Records: {
           select: {
             id: true,
             description: true,
@@ -64,7 +64,7 @@ export const home = async (req: Request, res: Response) => {
       district: client.district,
       city: client.city,
       uf: client.uf,
-      status: setClientStatus(client.Record)
+      status: setClientStatus(client.Records)
     }));
 
     const totalValuePayed = await prisma.record.aggregate({

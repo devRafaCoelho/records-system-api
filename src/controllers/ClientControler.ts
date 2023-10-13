@@ -1,6 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
-import { Client } from '../types/ClientTypes';
+import { Client, ClientData } from '../types/ClientTypes';
 import { formatCpf, formatDate, formatName, formatPhone, formatValue } from '../utils/format';
 
 const prisma = new PrismaClient();
@@ -18,7 +18,7 @@ export const registerClient = async (req: Request, res: Response) => {
     district,
     city,
     uf
-  }: Client = req.body;
+  }: ClientData = req.body;
 
   try {
     const emailExists = await prisma.client.findUnique({ where: { email } });
@@ -31,18 +31,19 @@ export const registerClient = async (req: Request, res: Response) => {
     if (cpfExists)
       return res.status(400).json({ error: { type: 'cpf', message: 'CPF already registered.' } });
 
-    const data = {
+    const data: ClientData = {
       firstName,
       lastName,
       email,
       cpf,
       phone,
-      address: address || null,
-      complement: complement || null,
-      zip_code: zip_code || null,
-      district: district || null,
-      city: city || null,
-      uf: uf || null
+      address,
+      complement,
+      zip_code,
+      district,
+      city,
+      uf,
+      status: 'up-to-date'
     };
 
     const registeredClient = await prisma.client.create({ data });
@@ -63,13 +64,14 @@ export const getClient = async (req: Request, res: Response) => {
         id: parseInt(id)
       },
       include: {
-        Record: {
+        Records: {
           select: {
             id: true,
             description: true,
             due_date: true,
             value: true,
-            paid_out: true
+            paid_out: true,
+            status: true
           },
           orderBy: {
             id: order === 'desc' ? 'desc' : 'asc'
@@ -81,43 +83,22 @@ export const getClient = async (req: Request, res: Response) => {
     if (!client)
       return res.status(400).json({ error: { type: 'id', message: 'Client not found.' } });
 
-    let clientStatus = 'up-to-date';
+    let clientStatus = client.status;
 
-    const formattedRecords = client.Record.map((record) => {
-      const getStatus = () => {
-        if (record.paid_out) return 'payed';
-        if (new Date(record.due_date) < new Date()) return 'expired';
-        return 'pending';
-      };
+    const formatedRecords = client.Records.map((record) => {
+      if (record.status === 'expired') clientStatus = 'defaulter';
 
       return {
         ...record,
         due_date: formatDate(record.due_date),
-        value: formatValue(record.value),
-        status: getStatus()
+        value: formatValue(record.value)
       };
     });
 
-    const expiredRecord = formattedRecords.find((record) => record.status === 'expired');
-    if (expiredRecord) {
-      clientStatus = 'defaulter';
-    }
-
     const data = {
-      id: client.id,
-      firstName: client.firstName,
-      lastName: client.lastName,
-      email: client.email,
-      cpf: client.cpf,
-      phone: client.phone,
-      address: client.address,
-      complement: client.complement,
-      zip_code: client.zip_code,
-      district: client.district,
-      city: client.city,
-      uf: client.uf,
+      ...client,
       status: clientStatus,
-      records: formattedRecords
+      Records: formatedRecords
     };
 
     return res.status(200).json(data);
@@ -139,21 +120,21 @@ export const updateClient = async (req: Request, res: Response) => {
     district,
     city,
     uf
-  }: Client = req.body;
+  }: ClientData = req.body;
   const { id } = req.params;
 
-  const data = {
+  const data: ClientData = {
     firstName,
     lastName,
     email,
     cpf,
     phone,
-    address: address || null,
-    complement: complement || null,
-    zip_code: zip_code || null,
-    district: district || null,
-    city: city || null,
-    uf: uf || null
+    address,
+    complement,
+    zip_code,
+    district,
+    city,
+    uf
   };
 
   try {
@@ -230,11 +211,16 @@ export const listClients = async (req: Request, res: Response) => {
   const offset = (page - 1) * perPage;
 
   try {
+    const statusFilter: Prisma.StringNullableFilter | undefined =
+      typeof status === 'string' ? { equals: status } : undefined;
+
     const clients = await prisma.client.findMany({
       orderBy: {
         firstName: order === 'desc' ? 'desc' : 'asc'
       },
-      where: name
+      where: status
+        ? { status: statusFilter }
+        : name
         ? {
             OR: [
               { firstName: { contains: String(name), mode: 'insensitive' } },
@@ -243,13 +229,14 @@ export const listClients = async (req: Request, res: Response) => {
           }
         : {},
       include: {
-        Record: {
+        Records: {
           select: {
             id: true,
             description: true,
             due_date: true,
             value: true,
-            paid_out: true
+            paid_out: true,
+            status: true
           }
         }
       }
@@ -259,36 +246,29 @@ export const listClients = async (req: Request, res: Response) => {
       return res.status(400).json({ error: { type: 'name', message: 'No clients found.' } });
     }
 
-    function setStatus(records: any) {
-      const expiredRecord = records.find(
-        (record: any) => !record.paid_out && new Date(record.due_date) < new Date()
-      );
-      return expiredRecord ? 'defaulter' : 'up-to-date';
-    }
+    const formattedClients = clients.map((client) => {
+      const { Records, ...clientData } = client;
 
-    let formattedClients = clients.map((client) => ({
-      id: client.id,
-      firstName: formatName(client.firstName),
-      lastName: formatName(client.lastName),
-      email: client.email,
-      cpf: formatCpf(client.cpf),
-      phone: formatPhone(client.phone),
-      address: client.address,
-      complement: client.complement,
-      zip_code: client.zip_code,
-      district: client.district,
-      city: client.city,
-      uf: client.uf,
-      status: setStatus(client.Record)
-    }));
+      const hasExpiredRecord = client.Records.some((record) => record.status === 'expired');
+      let clientStatus = hasExpiredRecord ? 'defaulter' : client.status;
 
-    if (status) {
-      formattedClients = formattedClients.filter((client) => client.status === status);
+      return {
+        ...clientData,
+        firstName: formatName(client.firstName),
+        lastName: formatName(client.lastName),
+        cpf: formatCpf(client.cpf),
+        phone: formatPhone(client.phone),
+        status: clientStatus
+      };
+    });
 
-      if (formattedClients.length === 0) {
-        return res.status(400).json({ error: { type: 'status', message: 'No clients found.' } });
-      }
-    }
+    // if (status) {
+    //   formattedClients = formattedClients.filter((client) => client.status === status);
+
+    //   if (formattedClients.length === 0) {
+    //     return res.status(400).json({ error: { type: 'status', message: 'No clients found.' } });
+    //   }
+    // }
 
     const paginatedClients = formattedClients.slice(offset, offset + perPage);
     const totalClients = formattedClients.length;
