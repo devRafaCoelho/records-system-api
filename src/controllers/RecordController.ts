@@ -205,6 +205,39 @@ export const listRecords = async (req: Request, res: Response) => {
       }
     }
 
+    const totalValuePayed = await prisma.record.aggregate({
+      _sum: {
+        value: true
+      },
+      where: {
+        paid_out: true
+      }
+    });
+
+    const totalValuePending = await prisma.record.aggregate({
+      _sum: {
+        value: true
+      },
+      where: {
+        paid_out: false,
+        due_date: {
+          gt: new Date()
+        }
+      }
+    });
+
+    const totalValueExpired = await prisma.record.aggregate({
+      _sum: {
+        value: true
+      },
+      where: {
+        paid_out: false,
+        due_date: {
+          lte: new Date()
+        }
+      }
+    });
+
     const totalRecords = formattedRecords.length;
     const totalPages = Math.ceil(totalRecords / perPage);
 
@@ -218,6 +251,9 @@ export const listRecords = async (req: Request, res: Response) => {
       page,
       totalPages,
       totalRecords,
+      totalValuePayed: formatValue(totalValuePayed._sum.value),
+      totalValuePending: formatValue(totalValuePending._sum.value),
+      totalValueExpired: formatValue(totalValueExpired._sum.value),
       records: paginatedRecords
     });
   } catch {
