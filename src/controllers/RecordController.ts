@@ -141,8 +141,8 @@ export const listRecords = async (req: Request, res: Response) => {
     orderName,
     status,
     name,
-    page: pageQuery = '1',
-    perPage: perPageQuery = '10'
+    page: pageQuery = 1,
+    perPage: perPageQuery = 25
   } = req.query;
   const page = Number(pageQuery);
   const perPage = Number(perPageQuery);
@@ -205,38 +205,42 @@ export const listRecords = async (req: Request, res: Response) => {
       }
     }
 
-    const totalValuePayed = await prisma.record.aggregate({
-      _sum: {
-        value: true
-      },
-      where: {
-        paid_out: true
-      }
-    });
+    let totalValue;
 
-    const totalValuePending = await prisma.record.aggregate({
-      _sum: {
-        value: true
-      },
-      where: {
-        paid_out: false,
-        due_date: {
-          gt: new Date()
+    if (status === 'payed') {
+      totalValue = await prisma.record.aggregate({
+        _sum: {
+          value: true
+        },
+        where: {
+          paid_out: true
         }
-      }
-    });
-
-    const totalValueExpired = await prisma.record.aggregate({
-      _sum: {
-        value: true
-      },
-      where: {
-        paid_out: false,
-        due_date: {
-          lte: new Date()
+      });
+    } else if (status === 'pending') {
+      totalValue = await prisma.record.aggregate({
+        _sum: {
+          value: true
+        },
+        where: {
+          paid_out: false,
+          due_date: {
+            gt: new Date()
+          }
         }
-      }
-    });
+      });
+    } else if (status === 'expired') {
+      totalValue = await prisma.record.aggregate({
+        _sum: {
+          value: true
+        },
+        where: {
+          paid_out: false,
+          due_date: {
+            lte: new Date()
+          }
+        }
+      });
+    }
 
     const totalRecords = formattedRecords.length;
     const totalPages = Math.ceil(totalRecords / perPage);
@@ -247,15 +251,15 @@ export const listRecords = async (req: Request, res: Response) => {
 
     const paginatedRecords = formattedRecords.slice(offset, offset + perPage);
 
-    return res.status(200).json({
+    const response = {
       page,
       totalPages,
       totalRecords,
-      totalValuePayed: formatValue(totalValuePayed._sum.value),
-      totalValuePending: formatValue(totalValuePending._sum.value),
-      totalValueExpired: formatValue(totalValueExpired._sum.value),
+      totalValue: status ? formatValue(totalValue?._sum.value) : undefined,
       records: paginatedRecords
-    });
+    };
+
+    return res.status(200).json(response);
   } catch {
     return res.status(500).json({ message: 'Internal server error.' });
   }
