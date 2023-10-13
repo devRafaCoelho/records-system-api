@@ -148,15 +148,6 @@ export const listRecords = async (req: Request, res: Response) => {
   const perPage = Number(perPageQuery);
   const offset = (page - 1) * perPage;
 
-  // orderBy: [
-  //   orderID === 'desc' ? { id: 'desc' } : { id: 'asc' },
-  //   orderName === 'desc' ? { client: { firstName: 'desc' } } : { client: { firstName: 'asc' } }
-  // ]
-
-  const id = {
-    id: orderID === 'desc' ? 'desc' : 'asc'
-  };
-
   try {
     const records = await prisma.record.findMany({
       orderBy: orderID
@@ -229,9 +220,7 @@ export const listRecords = async (req: Request, res: Response) => {
       totalRecords,
       records: paginatedRecords
     });
-  } catch (error) {
-    console.log(error);
-
+  } catch {
     return res.status(500).json({ message: 'Internal server error.' });
   }
 };
