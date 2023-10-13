@@ -4,6 +4,7 @@ export type Record = {
   due_date: Date;
   value: number;
   paid_out: boolean;
+  status: string;
 };
 
 export type UpdateRecord = {

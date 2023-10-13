@@ -41,4 +41,5 @@ model Record {
   due_date    DateTime
   value       Float
   paid_out    Boolean
+  status      String?
 }

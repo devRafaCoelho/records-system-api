@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
 import { Record, UpdateRecord } from '../types/RecordTypes';
 import { formatDate, formatValue } from '../utils/format';
@@ -20,12 +20,19 @@ export const registerRecord = async (req: Request, res: Response) => {
     if (!client)
       return res.status(400).json({ error: { type: 'id', message: 'Client not found.' } });
 
+    const status = () => {
+      if (paid_out) return 'payed';
+      if (new Date(dueDate) < new Date()) return 'expired';
+      return 'pending';
+    };
+
     const data = {
       id_clients,
       description,
       due_date: dueDate,
       value,
-      paid_out
+      paid_out,
+      status: status()
     };
 
     const registeredRecord = await prisma.record.create({ data });
@@ -55,23 +62,13 @@ export const getRecord = async (req: Request, res: Response) => {
     if (!record)
       return res.status(400).json({ error: { type: 'id', message: 'Record not found.' } });
 
-    const setStatus = () => {
-      if (record.paid_out) return 'payed';
-      if (new Date(record.due_date) < new Date()) return 'expired';
-      return 'pending';
-    };
-
-    const data = {
-      recordId: record.id,
-      id_clients: record.id_clients,
-      description: record.description,
+    const response = {
+      ...record,
       due_date: formatDate(record.due_date),
-      value: formatValue(record.value),
-      paid_out: record.paid_out,
-      status: setStatus()
+      value: formatValue(record.value)
     };
 
-    return res.status(200).json(data);
+    return res.status(200).json(response);
   } catch {
     return res.status(500).json({ message: 'Internal server error.' });
   }
@@ -149,6 +146,9 @@ export const listRecords = async (req: Request, res: Response) => {
   const offset = (page - 1) * perPage;
 
   try {
+    const statusFilter: Prisma.StringNullableFilter | undefined =
+      typeof status === 'string' ? { equals: status } : undefined;
+
     const records = await prisma.record.findMany({
       orderBy: orderID
         ? {
@@ -161,7 +161,9 @@ export const listRecords = async (req: Request, res: Response) => {
             }
           }
         : {},
-      where: name
+      where: status
+        ? { status: statusFilter }
+        : name
         ? {
             client: {
               OR: [
@@ -176,34 +178,16 @@ export const listRecords = async (req: Request, res: Response) => {
       }
     });
 
-    function setStatus(record: any) {
-      if (record.paid_out) return 'payed';
-      if (new Date(record.due_date) < new Date()) return 'expired';
-      return 'pending';
-    }
-
     let formattedRecords = records.map((record) => {
-      const client = record.client;
+      const { client, ...recordData } = record;
 
       return {
-        recordId: record.id,
-        id_clients: client.id,
-        description: record.description,
+        ...recordData,
         due_date: formatDate(record.due_date),
         value: formatValue(record.value),
-        paid_out: record.paid_out,
-        status: setStatus(record),
         clientName: `${client.firstName} ${client.lastName}`
       };
     });
-
-    if (status) {
-      formattedRecords = formattedRecords.filter((record) => record.status === status);
-
-      if (formattedRecords.length === 0) {
-        return res.status(400).json({ error: { type: 'status', message: 'No records found.' } });
-      }
-    }
 
     let totalValue;
 
