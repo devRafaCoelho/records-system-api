@@ -137,10 +137,10 @@ export const deleteRecord = async (req: Request, res: Response) => {
 
 export const listRecords = async (req: Request, res: Response) => {
   const {
-    order,
+    orderID,
+    orderName,
     status,
     name,
-    date,
     page: pageQuery = '1',
     perPage: perPageQuery = '10'
   } = req.query;
@@ -148,43 +148,61 @@ export const listRecords = async (req: Request, res: Response) => {
   const perPage = Number(perPageQuery);
   const offset = (page - 1) * perPage;
 
+  // orderBy: [
+  //   orderID === 'desc' ? { id: 'desc' } : { id: 'asc' },
+  //   orderName === 'desc' ? { client: { firstName: 'desc' } } : { client: { firstName: 'asc' } }
+  // ]
+
+  const id = {
+    id: orderID === 'desc' ? 'desc' : 'asc'
+  };
+
   try {
-    const allRecords = await prisma.record.findMany({
-      orderBy: {
-        id: order === 'desc' ? 'desc' : 'asc'
-      },
-      skip: offset,
-      take: perPage
-    });
-
-    const setStatus = (record: any) => {
-      if (record.paid_out) return 'payed';
-      if (new Date(record.due_date) < new Date()) return 'expired';
-      return 'pending';
-    };
-
-    const clientIds = allRecords.map((record) => record.id_clients);
-
-    const clients = await prisma.client.findMany({
-      where: {
-        id: {
-          in: clientIds
-        }
+    const records = await prisma.record.findMany({
+      orderBy: orderID
+        ? {
+            id: orderID === 'desc' ? 'desc' : 'asc'
+          }
+        : orderName
+        ? {
+            client: {
+              firstName: orderName === 'desc' ? 'desc' : 'asc'
+            }
+          }
+        : {},
+      where: name
+        ? {
+            client: {
+              OR: [
+                { firstName: { contains: String(name), mode: 'insensitive' } },
+                { lastName: { contains: String(name), mode: 'insensitive' } }
+              ]
+            }
+          }
+        : {},
+      include: {
+        client: true
       }
     });
 
-    let formattedRecords = allRecords.map((record) => {
-      const client = clients.find((client) => client.id === record.id_clients);
+    function setStatus(record: any) {
+      if (record.paid_out) return 'payed';
+      if (new Date(record.due_date) < new Date()) return 'expired';
+      return 'pending';
+    }
+
+    let formattedRecords = records.map((record) => {
+      const client = record.client;
 
       return {
         recordId: record.id,
-        id_clients: record.id_clients,
+        id_clients: client.id,
         description: record.description,
         due_date: formatDate(record.due_date),
         value: formatValue(record.value),
         paid_out: record.paid_out,
         status: setStatus(record),
-        clientName: `${client?.firstName} ${client?.lastName}`
+        clientName: `${client.firstName} ${client.lastName}`
       };
     });
 
@@ -196,35 +214,24 @@ export const listRecords = async (req: Request, res: Response) => {
       }
     }
 
-    if (name) {
-      if (typeof name === 'string') {
-        formattedRecords = formattedRecords.filter((record) =>
-          record.clientName.toLowerCase().includes(name.toLowerCase())
-        );
-      }
+    const totalRecords = formattedRecords.length;
+    const totalPages = Math.ceil(totalRecords / perPage);
 
-      if (formattedRecords.length === 0) {
-        return res.status(400).json({ error: { type: 'name', message: 'No records found.' } });
-      }
+    if (page > totalPages) {
+      return res.status(400).json({ error: { type: 'page', message: 'No records found.' } });
     }
 
-    if (date) {
-      formattedRecords = formattedRecords.filter((record) => record.due_date === date);
+    const paginatedRecords = formattedRecords.slice(offset, offset + perPage);
 
-      if (formattedRecords.length === 0) {
-        return res.status(400).json({ error: { type: 'date', message: 'No records found.' } });
-      }
-    }
+    return res.status(200).json({
+      page,
+      totalPages,
+      totalRecords,
+      records: paginatedRecords
+    });
+  } catch (error) {
+    console.log(error);
 
-    const response = {
-      totalRecords: formattedRecords.length,
-      totalPages: Math.ceil(formattedRecords.length / perPage),
-      currentPage: page,
-      records: formattedRecords
-    };
-
-    return res.status(200).json(response);
-  } catch {
     return res.status(500).json({ message: 'Internal server error.' });
   }
 };
