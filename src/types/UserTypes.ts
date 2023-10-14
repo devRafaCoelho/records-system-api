@@ -1,4 +1,13 @@
-export type RegisterUser = {
+export type UserData = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  cpf?: string;
+  phone?: string;
+};
+
+export type RegisterUserData = {
   firstName: string;
   lastName: string;
   email: string;
@@ -8,12 +17,12 @@ export type RegisterUser = {
   confirmPassword: string;
 };
 
-export type Login = {
+export type LoginData = {
   email: string;
   password: string;
 };
 
-export type UpdateUser = {
+export type UpdateUserData = {
   firstName: string;
   lastName: string;
   email: string;
@@ -22,7 +31,7 @@ export type UpdateUser = {
   password: string;
 };
 
-export type NewPassword = {
+export type NewPasswordData = {
   password: string;
   newPassword: string;
   confirmNewPassword: string;

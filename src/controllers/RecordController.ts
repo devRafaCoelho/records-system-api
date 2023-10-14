@@ -1,12 +1,12 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
-import { Record, UpdateRecord } from '../types/RecordTypes';
+import { Record, RecordData, UpdateRecord } from '../types/RecordTypes';
 import { formatDate, formatValue } from '../utils/format';
 
 const prisma = new PrismaClient();
 
 export const registerRecord = async (req: Request, res: Response) => {
-  const { id_clients, description, due_date, value, paid_out }: Record = req.body;
+  const { id_clients, description, due_date, value, paid_out }: RecordData = req.body;
 
   const dueDate = new Date(due_date);
 
@@ -20,15 +20,34 @@ export const registerRecord = async (req: Request, res: Response) => {
     if (!client)
       return res.status(400).json({ error: { type: 'id', message: 'Client not found.' } });
 
-    const data = {
+    const status = () => {
+      switch (true) {
+        case paid_out:
+          return 'payed';
+        case new Date(dueDate) < new Date():
+          return 'expired';
+        default:
+          return 'pending';
+      }
+    };
+
+    const data: RecordData = {
       id_clients,
       description,
       due_date: dueDate,
       value,
-      paid_out
+      paid_out,
+      status: status()
     };
 
     const registeredRecord = await prisma.record.create({ data });
+
+    if (registeredRecord.status === 'expired') {
+      await prisma.client.update({
+        where: { id: id_clients },
+        data: { status: 'defaulter' }
+      });
+    }
 
     const formatedResponse = {
       ...registeredRecord,
@@ -55,23 +74,129 @@ export const getRecord = async (req: Request, res: Response) => {
     if (!record)
       return res.status(400).json({ error: { type: 'id', message: 'Record not found.' } });
 
-    const setStatus = () => {
-      if (record.paid_out) return 'payed';
-      if (new Date(record.due_date) < new Date()) return 'expired';
-      return 'pending';
-    };
-
-    const data = {
-      recordId: record.id,
-      id_clients: record.id_clients,
-      description: record.description,
+    const response = {
+      ...record,
       due_date: formatDate(record.due_date),
-      value: formatValue(record.value),
-      paid_out: record.paid_out,
-      status: setStatus()
+      value: formatValue(record.value)
     };
 
-    return res.status(200).json(data);
+    return res.status(200).json(response);
+  } catch {
+    return res.status(500).json({ message: 'Internal server error.' });
+  }
+};
+
+export const listRecords = async (req: Request, res: Response) => {
+  const {
+    orderID,
+    orderName,
+    status,
+    name,
+    page: pageQuery = 1,
+    perPage: perPageQuery = 25
+  } = req.query;
+  const page = Number(pageQuery);
+  const perPage = Number(perPageQuery);
+  const offset = (page - 1) * perPage;
+
+  try {
+    const statusFilter: Prisma.StringNullableFilter | undefined =
+      typeof status === 'string' ? { equals: status } : undefined;
+
+    const records = await prisma.record.findMany({
+      orderBy: orderID
+        ? {
+            id: orderID === 'desc' ? 'desc' : 'asc'
+          }
+        : orderName
+        ? {
+            client: {
+              firstName: orderName === 'desc' ? 'desc' : 'asc'
+            }
+          }
+        : {},
+      where: status
+        ? { status: statusFilter }
+        : name
+        ? {
+            client: {
+              OR: [
+                { firstName: { contains: String(name), mode: 'insensitive' } },
+                { lastName: { contains: String(name), mode: 'insensitive' } }
+              ]
+            }
+          }
+        : {},
+      include: {
+        client: true
+      }
+    });
+
+    let formattedRecords = records.map((record) => {
+      const { client, ...recordData } = record;
+
+      return {
+        ...recordData,
+        due_date: formatDate(record.due_date),
+        value: formatValue(record.value),
+        clientName: `${client.firstName} ${client.lastName}`
+      };
+    });
+
+    let totalValue;
+
+    if (status === 'payed') {
+      totalValue = await prisma.record.aggregate({
+        _sum: {
+          value: true
+        },
+        where: {
+          paid_out: true
+        }
+      });
+    } else if (status === 'pending') {
+      totalValue = await prisma.record.aggregate({
+        _sum: {
+          value: true
+        },
+        where: {
+          paid_out: false,
+          due_date: {
+            gt: new Date()
+          }
+        }
+      });
+    } else if (status === 'expired') {
+      totalValue = await prisma.record.aggregate({
+        _sum: {
+          value: true
+        },
+        where: {
+          paid_out: false,
+          due_date: {
+            lte: new Date()
+          }
+        }
+      });
+    }
+
+    const totalRecords = formattedRecords.length;
+    const totalPages = Math.ceil(totalRecords / perPage);
+    const paginatedRecords = formattedRecords.slice(offset, offset + perPage);
+
+    if (page > totalPages) {
+      return res.status(400).json({ error: { type: 'page', message: 'No records found.' } });
+    }
+
+    const response = {
+      page,
+      totalPages,
+      totalRecords,
+      totalValue: status ? formatValue(totalValue?._sum.value) : undefined,
+      records: paginatedRecords
+    };
+
+    return res.status(200).json(response);
   } catch {
     return res.status(500).json({ message: 'Internal server error.' });
   }
@@ -83,13 +208,6 @@ export const updateRecord = async (req: Request, res: Response) => {
 
   const dueDate = new Date(due_date);
 
-  const data = {
-    description,
-    due_date: dueDate,
-    value,
-    paid_out
-  };
-
   try {
     const record = await prisma.record.findUnique({
       where: {
@@ -100,12 +218,65 @@ export const updateRecord = async (req: Request, res: Response) => {
     if (!record)
       return res.status(400).json({ error: { type: 'id', message: 'Record not found.' } });
 
-    await prisma.record.update({
+    const status = () => {
+      switch (true) {
+        case paid_out:
+          return 'payed';
+        case new Date(dueDate) < new Date():
+          return 'expired';
+        default:
+          return 'pending';
+      }
+    };
+
+    const data: UpdateRecord = {
+      description,
+      due_date: dueDate,
+      value,
+      paid_out,
+      status: status()
+    };
+
+    const updatedRecord = await prisma.record.update({
       where: {
         id: parseInt(id)
       },
       data: data
     });
+
+    if (updatedRecord.status === 'expired') {
+      await prisma.client.update({
+        where: { id: record?.id_clients },
+        data: { status: 'defaulter' }
+      });
+    } else {
+      const client = await prisma.client.findUnique({
+        where: {
+          id: record?.id_clients
+        },
+        include: {
+          Records: {
+            select: {
+              id: true,
+              description: true,
+              due_date: true,
+              value: true,
+              paid_out: true,
+              status: true
+            }
+          }
+        }
+      });
+
+      const hasExpiredRecord = client?.Records.some((record) => record.status === 'expired');
+
+      if (!hasExpiredRecord) {
+        await prisma.client.update({
+          where: { id: record?.id_clients },
+          data: { status: 'up-to-date' }
+        });
+      }
+    }
 
     return res.status(204).send();
   } catch {
@@ -129,101 +300,34 @@ export const deleteRecord = async (req: Request, res: Response) => {
       where: { id: parseInt(id) }
     });
 
-    return res.status(204).send();
-  } catch {
-    return res.status(500).json({ message: 'Internal server error.' });
-  }
-};
-
-export const listRecords = async (req: Request, res: Response) => {
-  const {
-    order,
-    status,
-    name,
-    date,
-    page: pageQuery = '1',
-    perPage: perPageQuery = '10'
-  } = req.query;
-  const page = Number(pageQuery);
-  const perPage = Number(perPageQuery);
-  const offset = (page - 1) * perPage;
-
-  try {
-    const allRecords = await prisma.record.findMany({
-      orderBy: {
-        id: order === 'desc' ? 'desc' : 'asc'
-      },
-      skip: offset,
-      take: perPage
-    });
-
-    const setStatus = (record: any) => {
-      if (record.paid_out) return 'payed';
-      if (new Date(record.due_date) < new Date()) return 'expired';
-      return 'pending';
-    };
-
-    const clientIds = allRecords.map((record) => record.id_clients);
-
-    const clients = await prisma.client.findMany({
+    const client = await prisma.client.findUnique({
       where: {
-        id: {
-          in: clientIds
+        id: record?.id_clients
+      },
+      include: {
+        Records: {
+          select: {
+            id: true,
+            description: true,
+            due_date: true,
+            value: true,
+            paid_out: true,
+            status: true
+          }
         }
       }
     });
 
-    let formattedRecords = allRecords.map((record) => {
-      const client = clients.find((client) => client.id === record.id_clients);
+    const hasExpiredRecord = client?.Records.some((record) => record.status === 'expired');
 
-      return {
-        recordId: record.id,
-        id_clients: record.id_clients,
-        description: record.description,
-        due_date: formatDate(record.due_date),
-        value: formatValue(record.value),
-        paid_out: record.paid_out,
-        status: setStatus(record),
-        clientName: `${client?.firstName} ${client?.lastName}`
-      };
-    });
-
-    if (status) {
-      formattedRecords = formattedRecords.filter((record) => record.status === status);
-
-      if (formattedRecords.length === 0) {
-        return res.status(400).json({ error: { type: 'status', message: 'No records found.' } });
-      }
+    if (!hasExpiredRecord) {
+      await prisma.client.update({
+        where: { id: record?.id_clients },
+        data: { status: 'up-to-date' }
+      });
     }
 
-    if (name) {
-      if (typeof name === 'string') {
-        formattedRecords = formattedRecords.filter((record) =>
-          record.clientName.toLowerCase().includes(name.toLowerCase())
-        );
-      }
-
-      if (formattedRecords.length === 0) {
-        return res.status(400).json({ error: { type: 'name', message: 'No records found.' } });
-      }
-    }
-
-    if (date) {
-      formattedRecords = formattedRecords.filter((record) => record.due_date === date);
-
-      if (formattedRecords.length === 0) {
-        return res.status(400).json({ error: { type: 'date', message: 'No records found.' } });
-      }
-    }
-
-    const response = {
-      totalRecords: formattedRecords.length,
-      totalPages: Math.ceil(formattedRecords.length / perPage),
-      currentPage: page,
-      records: formattedRecords
-    };
-
-    return res.status(200).json(response);
+    return res.status(204).send();
   } catch {
     return res.status(500).json({ message: 'Internal server error.' });
   }
