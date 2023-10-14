@@ -1,4 +1,4 @@
-import { Client, PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { formatCpf, formatDate, formatName, formatPhone, formatValue } from './format';
 
 const prisma = new PrismaClient();

@@ -37,17 +37,28 @@ import {
   RegisterUserSchema,
   UpdateUserSchema
 } from './schemas/UserSchemas';
+import {
+  validateLoginData,
+  validateNewPasswordData,
+  validateRegisterUserData,
+  validateUpdateUserData
+} from './middlewares/ValidateUserData';
 
 const routes = Router();
 
-routes.post('/user', ValidateRequest(RegisterUserSchema), registerUser);
-routes.post('/login', ValidateRequest(LoginSchema), login);
+routes.post('/user', ValidateRequest(RegisterUserSchema), validateRegisterUserData, registerUser);
+routes.post('/login', ValidateRequest(LoginSchema), validateLoginData, login);
 
 routes.use(validateAuthentication);
 
 routes.get('/user', getUser);
-routes.put('/user', ValidateRequest(UpdateUserSchema), updateUser);
-routes.put('/user/newPassword', ValidateRequest(NewPasswordSchema), newPassword);
+routes.put('/user', ValidateRequest(UpdateUserSchema), validateUpdateUserData, updateUser);
+routes.put(
+  '/user/newPassword',
+  ValidateRequest(NewPasswordSchema),
+  validateNewPasswordData,
+  newPassword
+);
 routes.delete('/user', deleteUser);
 
 routes.post('/client', ValidateRequest(ClientSchema), validateRegisterClientData, registerClient);
