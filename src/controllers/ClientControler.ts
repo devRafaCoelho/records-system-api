@@ -47,39 +47,6 @@ export const getClient = async (req: Request, res: Response) => {
   }
 };
 
-export const updateClient = async (req: Request, res: Response) => {
-  const data: ClientData = req.body;
-  const { id } = req.params;
-
-  try {
-    await prisma.client.update({
-      where: {
-        id: parseInt(id)
-      },
-      data: data
-    });
-
-    return res.status(204).send();
-  } catch {
-    return res.status(500).json({ message: 'Internal server error.' });
-  }
-};
-
-export const deleteClient = async (req: Request, res: Response) => {
-  const { id } = req.params;
-
-  try {
-    await prisma.$transaction([
-      prisma.record.deleteMany({ where: { id_clients: parseInt(id) } }),
-      prisma.client.delete({ where: { id: parseInt(id) } })
-    ]);
-
-    return res.status(204).send();
-  } catch {
-    return res.status(500).json({ message: 'Internal server error.' });
-  }
-};
-
 export const listClients = async (req: Request, res: Response) => {
   const { order, status, name, page: pageQuery = 1, perPage: perPageQuery = 25 } = req.query;
   const page = Number(pageQuery);
@@ -109,6 +76,39 @@ export const listClients = async (req: Request, res: Response) => {
       totalClients,
       clients: paginatedClients
     });
+  } catch {
+    return res.status(500).json({ message: 'Internal server error.' });
+  }
+};
+
+export const updateClient = async (req: Request, res: Response) => {
+  const data: ClientData = req.body;
+  const { id } = req.params;
+
+  try {
+    await prisma.client.update({
+      where: {
+        id: parseInt(id)
+      },
+      data: data
+    });
+
+    return res.status(204).send();
+  } catch {
+    return res.status(500).json({ message: 'Internal server error.' });
+  }
+};
+
+export const deleteClient = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    await prisma.$transaction([
+      prisma.record.deleteMany({ where: { id_clients: parseInt(id) } }),
+      prisma.client.delete({ where: { id: parseInt(id) } })
+    ]);
+
+    return res.status(204).send();
   } catch {
     return res.status(500).json({ message: 'Internal server error.' });
   }

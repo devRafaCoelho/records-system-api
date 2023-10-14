@@ -28,6 +28,17 @@ import {
   validateRegisterClientData,
   validateUpdateClientData
 } from './middlewares/ValidateClientData';
+import {
+  validateListRecordsData,
+  validateRecordData,
+  validateRegisterRecordData
+} from './middlewares/ValidateRecordData';
+import {
+  validateLoginData,
+  validateNewPasswordData,
+  validateRegisterUserData,
+  validateUpdateUserData
+} from './middlewares/ValidateUserData';
 import { ValidateRequest } from './middlewares/validateRequest';
 import { ClientSchema } from './schemas/ClientSchemas';
 import { RegisterRecordSchema } from './schemas/RecordsSchemas';
@@ -37,12 +48,6 @@ import {
   RegisterUserSchema,
   UpdateUserSchema
 } from './schemas/UserSchemas';
-import {
-  validateLoginData,
-  validateNewPasswordData,
-  validateRegisterUserData,
-  validateUpdateUserData
-} from './middlewares/ValidateUserData';
 
 const routes = Router();
 
@@ -67,11 +72,16 @@ routes.get('/client', validateListClientsData, listClients);
 routes.put('/client/:id', ValidateRequest(ClientSchema), validateUpdateClientData, updateClient);
 routes.delete('/client/:id', validateClientData, deleteClient);
 
-routes.post('/record', ValidateRequest(RegisterRecordSchema), registerRecord);
-routes.get('/record', listRecords);
-routes.get('/record/:id', getRecord);
-routes.put('/record/:id', updateRecord);
-routes.delete('/record/:id', deleteRecord);
+routes.post(
+  '/record',
+  ValidateRequest(RegisterRecordSchema),
+  validateRegisterRecordData,
+  registerRecord
+);
+routes.get('/record/:id', validateRecordData, getRecord);
+routes.get('/record', validateListRecordsData, listRecords);
+routes.put('/record/:id', validateRecordData, updateRecord);
+routes.delete('/record/:id', validateRecordData, deleteRecord);
 
 // routes.get('/home', home);
 

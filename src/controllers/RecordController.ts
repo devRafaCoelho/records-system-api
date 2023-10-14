@@ -1,59 +1,41 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
-import { Record, RecordData, UpdateRecord } from '../types/RecordTypes';
+import { RecordData, UpdateRecord } from '../types/RecordTypes';
 import { formatDate, formatValue } from '../utils/format';
+import {
+  calculateTotalValue,
+  formatRecords,
+  formatResponse,
+  getClientRecordByID,
+  getRecordByID,
+  getRecordsByStatusOrName,
+  setStatus
+} from '../utils/recordData';
 
 const prisma = new PrismaClient();
 
 export const registerRecord = async (req: Request, res: Response) => {
-  const { id_clients, description, due_date, value, paid_out }: RecordData = req.body;
+  const data: RecordData = req.body;
 
-  const dueDate = new Date(due_date);
+  const dueDate = new Date(data.due_date);
 
   try {
-    const client = await prisma.client.findUnique({
-      where: {
-        id: id_clients
-      }
-    });
-
-    if (!client)
-      return res.status(400).json({ error: { type: 'id', message: 'Client not found.' } });
-
-    const status = () => {
-      switch (true) {
-        case paid_out:
-          return 'payed';
-        case new Date(dueDate) < new Date():
-          return 'expired';
-        default:
-          return 'pending';
-      }
-    };
-
-    const data: RecordData = {
-      id_clients,
-      description,
+    const recorData = {
+      ...data,
       due_date: dueDate,
-      value,
-      paid_out,
-      status: status()
+      status: setStatus(data, dueDate)
     };
 
-    const registeredRecord = await prisma.record.create({ data });
+    const registeredRecord = await prisma.record.create({ data: recorData });
 
     if (registeredRecord.status === 'expired') {
       await prisma.client.update({
-        where: { id: id_clients },
+        where: { id: data.id_clients },
         data: { status: 'defaulter' }
       });
     }
 
-    const formatedResponse = {
-      ...registeredRecord,
-      due_date: formatDate(registeredRecord.due_date),
-      value: formatValue(registeredRecord.value)
-    };
+    const formatedResponse = formatResponse(registeredRecord);
 
     return res.status(201).json(formatedResponse);
   } catch {
@@ -65,22 +47,17 @@ export const getRecord = async (req: Request, res: Response) => {
   const { id } = req.params;
 
   try {
-    const record = await prisma.record.findUnique({
-      where: {
-        id: parseInt(id)
-      }
-    });
+    const record = await getRecordByID(Number(id));
 
-    if (!record)
-      return res.status(400).json({ error: { type: 'id', message: 'Record not found.' } });
+    if (record) {
+      const response = {
+        ...record,
+        due_date: formatDate(record.due_date),
+        value: formatValue(record.value)
+      };
 
-    const response = {
-      ...record,
-      due_date: formatDate(record.due_date),
-      value: formatValue(record.value)
-    };
-
-    return res.status(200).json(response);
+      return res.status(200).json(response);
+    }
   } catch {
     return res.status(500).json({ message: 'Internal server error.' });
   }
@@ -100,85 +77,16 @@ export const listRecords = async (req: Request, res: Response) => {
   const offset = (page - 1) * perPage;
 
   try {
-    const statusFilter: Prisma.StringNullableFilter | undefined =
-      typeof status === 'string' ? { equals: status } : undefined;
+    const records = await getRecordsByStatusOrName(
+      status as string,
+      name as string,
+      orderID as string,
+      orderName as string
+    );
 
-    const records = await prisma.record.findMany({
-      orderBy: orderID
-        ? {
-            id: orderID === 'desc' ? 'desc' : 'asc'
-          }
-        : orderName
-        ? {
-            client: {
-              firstName: orderName === 'desc' ? 'desc' : 'asc'
-            }
-          }
-        : {},
-      where: status
-        ? { status: statusFilter }
-        : name
-        ? {
-            client: {
-              OR: [
-                { firstName: { contains: String(name), mode: 'insensitive' } },
-                { lastName: { contains: String(name), mode: 'insensitive' } }
-              ]
-            }
-          }
-        : {},
-      include: {
-        client: true
-      }
-    });
+    const formattedRecords = formatRecords(records);
 
-    let formattedRecords = records.map((record) => {
-      const { client, ...recordData } = record;
-
-      return {
-        ...recordData,
-        due_date: formatDate(record.due_date),
-        value: formatValue(record.value),
-        clientName: `${client.firstName} ${client.lastName}`
-      };
-    });
-
-    let totalValue;
-
-    if (status === 'payed') {
-      totalValue = await prisma.record.aggregate({
-        _sum: {
-          value: true
-        },
-        where: {
-          paid_out: true
-        }
-      });
-    } else if (status === 'pending') {
-      totalValue = await prisma.record.aggregate({
-        _sum: {
-          value: true
-        },
-        where: {
-          paid_out: false,
-          due_date: {
-            gt: new Date()
-          }
-        }
-      });
-    } else if (status === 'expired') {
-      totalValue = await prisma.record.aggregate({
-        _sum: {
-          value: true
-        },
-        where: {
-          paid_out: false,
-          due_date: {
-            lte: new Date()
-          }
-        }
-      });
-    }
+    const totalValue = await calculateTotalValue(String(status));
 
     const totalRecords = formattedRecords.length;
     const totalPages = Math.ceil(totalRecords / perPage);
@@ -203,45 +111,25 @@ export const listRecords = async (req: Request, res: Response) => {
 };
 
 export const updateRecord = async (req: Request, res: Response) => {
-  const { description, due_date, value, paid_out }: UpdateRecord = req.body;
+  const data: UpdateRecord = req.body;
   const { id } = req.params;
 
-  const dueDate = new Date(due_date);
+  const dueDate = new Date(data.due_date);
 
   try {
-    const record = await prisma.record.findUnique({
-      where: {
-        id: parseInt(id)
-      }
-    });
+    const record = await getRecordByID(Number(id));
 
-    if (!record)
-      return res.status(400).json({ error: { type: 'id', message: 'Record not found.' } });
-
-    const status = () => {
-      switch (true) {
-        case paid_out:
-          return 'payed';
-        case new Date(dueDate) < new Date():
-          return 'expired';
-        default:
-          return 'pending';
-      }
-    };
-
-    const data: UpdateRecord = {
-      description,
+    const recordData = {
+      ...data,
       due_date: dueDate,
-      value,
-      paid_out,
-      status: status()
+      status: setStatus(data, dueDate)
     };
 
     const updatedRecord = await prisma.record.update({
       where: {
         id: parseInt(id)
       },
-      data: data
+      data: recordData
     });
 
     if (updatedRecord.status === 'expired') {
@@ -250,23 +138,7 @@ export const updateRecord = async (req: Request, res: Response) => {
         data: { status: 'defaulter' }
       });
     } else {
-      const client = await prisma.client.findUnique({
-        where: {
-          id: record?.id_clients
-        },
-        include: {
-          Records: {
-            select: {
-              id: true,
-              description: true,
-              due_date: true,
-              value: true,
-              paid_out: true,
-              status: true
-            }
-          }
-        }
-      });
+      const client = await getClientRecordByID(Number(record?.id_clients));
 
       const hasExpiredRecord = client?.Records.some((record) => record.status === 'expired');
 
@@ -287,36 +159,14 @@ export const updateRecord = async (req: Request, res: Response) => {
 export const deleteRecord = async (req: Request, res: Response) => {
   const { id } = req.params;
 
-  const record = await prisma.record.findUnique({
-    where: {
-      id: parseInt(id)
-    }
-  });
-
-  if (!record) return res.status(400).json({ error: { type: 'id', message: 'Record not found.' } });
-
   try {
+    const record = await getRecordByID(Number(id));
+
     await prisma.record.delete({
       where: { id: parseInt(id) }
     });
 
-    const client = await prisma.client.findUnique({
-      where: {
-        id: record?.id_clients
-      },
-      include: {
-        Records: {
-          select: {
-            id: true,
-            description: true,
-            due_date: true,
-            value: true,
-            paid_out: true,
-            status: true
-          }
-        }
-      }
-    });
+    const client = await getClientRecordByID(Number(record?.id_clients));
 
     const hasExpiredRecord = client?.Records.some((record) => record.status === 'expired');
 

@@ -8,12 +8,13 @@ export type Record = {
 };
 
 export type RecordData = {
+  id: number;
   id_clients: number;
   description: string;
   due_date: Date;
   value: number;
   paid_out: boolean;
-  status: string | null | undefined;
+  status: string;
 };
 
 export type UpdateRecord = {
