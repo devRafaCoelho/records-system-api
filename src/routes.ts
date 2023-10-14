@@ -1,5 +1,19 @@
 import { Router } from 'express';
 import {
+  deleteClient,
+  getClient,
+  listClients,
+  registerClient,
+  updateClient
+} from './controllers/ClientControler';
+import {
+  deleteRecord,
+  getRecord,
+  listRecords,
+  registerRecord,
+  updateRecord
+} from './controllers/RecordController';
+import {
   deleteUser,
   getUser,
   login,
@@ -8,30 +22,21 @@ import {
   updateUser
 } from './controllers/UserController';
 import { validateAuthentication } from './middlewares/ValidateAuthentication';
+import {
+  validateClientData,
+  validateListClientsData,
+  validateRegisterClientData,
+  validateUpdateClientData
+} from './middlewares/ValidateClientData';
 import { ValidateRequest } from './middlewares/validateRequest';
-import {
-  RegisterUserSchema,
-  LoginSchema,
-  UpdateUserSchema,
-  NewPasswordSchema
-} from './schemas/UserSchemas';
-import { RegisterClientSchema } from './schemas/ClientSchemas';
-import {
-  deleteClient,
-  getClient,
-  listClients,
-  registerClient,
-  updateClient
-} from './controllers/ClientControler';
+import { ClientSchema } from './schemas/ClientSchemas';
 import { RegisterRecordSchema } from './schemas/RecordsSchemas';
 import {
-  deleteRecord,
-  getRecord,
-  listRecords,
-  registerRecord,
-  updateRecord
-} from './controllers/RecordController';
-import { home } from './controllers/HomeController';
+  LoginSchema,
+  NewPasswordSchema,
+  RegisterUserSchema,
+  UpdateUserSchema
+} from './schemas/UserSchemas';
 
 const routes = Router();
 
@@ -45,11 +50,11 @@ routes.put('/user', ValidateRequest(UpdateUserSchema), updateUser);
 routes.put('/user/newPassword', ValidateRequest(NewPasswordSchema), newPassword);
 routes.delete('/user', deleteUser);
 
-routes.post('/client', ValidateRequest(RegisterClientSchema), registerClient);
-routes.get('/client', listClients);
-routes.get('/client/:id', getClient);
-routes.put('/client/:id', updateClient);
-routes.delete('/client/:id', deleteClient);
+routes.post('/client', ValidateRequest(ClientSchema), validateRegisterClientData, registerClient);
+routes.get('/client/:id', validateClientData, getClient);
+routes.get('/client', validateListClientsData, listClients);
+routes.put('/client/:id', ValidateRequest(ClientSchema), validateUpdateClientData, updateClient);
+routes.delete('/client/:id', validateClientData, deleteClient);
 
 routes.post('/record', ValidateRequest(RegisterRecordSchema), registerRecord);
 routes.get('/record', listRecords);

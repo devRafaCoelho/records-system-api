@@ -2,7 +2,7 @@ import Joi from 'joi';
 import { cpf } from 'cpf-cnpj-validator';
 import { isValidNumber, CountryCode } from 'libphonenumber-js';
 
-export const RegisterClientSchema = Joi.object({
+export const ClientSchema = Joi.object({
   firstName: Joi.string().required().messages({
     'any.required': 'The first name is required.',
     'string.empty': 'The first name is required.',
