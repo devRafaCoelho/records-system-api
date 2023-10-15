@@ -98,6 +98,24 @@ export const formatRecordsClient = async (client: any, clientStatus: any) => {
   return formatedRecords;
 };
 
+export const formatClient = (client: any) => {
+  const { Records, ...clientData } = client;
+
+  const hasExpiredRecord = Records.some((record: any) => record.status === 'expired');
+  let clientStatus = hasExpiredRecord ? 'defaulter' : client.status;
+
+  const formattedClient = {
+    ...clientData,
+    firstName: formatName(client.firstName),
+    lastName: formatName(client.lastName),
+    cpf: formatCpf(client.cpf),
+    phone: formatPhone(client.phone),
+    status: clientStatus
+  };
+
+  return formattedClient;
+};
+
 export const formatClients = async (clients: any) => {
   const formattedClients = clients.map((client: any) => {
     const { Records, ...clientData } = client;

@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
 import { ClientData } from '../types/ClientTypes';
 import {
+  formatClient,
   formatClients,
   formatRecordsClient,
   getClientById,
@@ -33,11 +34,11 @@ export const getClient = async (req: Request, res: Response) => {
 
     let clientStatus = client?.status;
 
+    const formattedClient = formatClient(client);
     const formatedRecords = await formatRecordsClient(client, clientStatus);
 
     const data = {
-      ...client,
-      status: clientStatus,
+      ...formattedClient,
       Records: formatedRecords
     };
 
