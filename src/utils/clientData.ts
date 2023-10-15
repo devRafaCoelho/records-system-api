@@ -1,5 +1,12 @@
 import { PrismaClient } from '@prisma/client';
-import { formatCpf, formatDate, formatName, formatPhone, formatValue } from './format';
+import {
+  formatCpf,
+  formatDate,
+  formatName,
+  formatPhone,
+  formatValue,
+  formatZipCode
+} from './format';
 
 const prisma = new PrismaClient();
 
@@ -110,6 +117,7 @@ export const formatClient = (client: any) => {
     lastName: formatName(client.lastName),
     cpf: formatCpf(client.cpf),
     phone: formatPhone(client.phone),
+    zip_code: formatZipCode(client.zip_code),
     status: clientStatus
   };
 

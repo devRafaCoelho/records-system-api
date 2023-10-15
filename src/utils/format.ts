@@ -22,3 +22,7 @@ export const formatPhone = (phone: any) => {
     ? phone.replace(/\D/g, '').replace(/^(55)(\d{2})(\d)(\d{4})(\d{4})$/, '+$1 ($2) $3 $4-$5')
     : null;
 };
+
+export const formatZipCode = (zipCode: any) => {
+  return zipCode ? zipCode.replace(/^(\d{5})(\d{3})$/, '$1-$2') : null;
+};
